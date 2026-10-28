@@ -1,0 +1,14 @@
+{
+  "port": "8080",
+  "ffmpeg_path": "ffmpeg",
+  "deepseek_api_key": "",
+  "typesafe_api_key": "",
+  "gemini_api_key": "",
+  "whisper_cli_path": "bin/whisper/whisper-cli.exe",
+  "whisper_model_path": "bin/whisper/models/ggml-small.bin",
+  "storage_dir": "data",
+  "use_nvenc": true,
+  "min_silence_duration": 0.4,
+  "silence_noise_threshold": "-30dB",
+  "safety_padding_ms": 60
+}
