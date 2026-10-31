@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Clock, Film, FolderOpen, Plus, Scissors, Trash2 } from 'lucide-vue-next'
+import { Clock, Film, FolderOpen, Plus, Scissors, Trash2, X } from 'lucide-vue-next'
 import { api } from '../api'
 import { formatSecondsShort } from '../lib/format'
 import type { Project } from '../types'
@@ -155,6 +155,7 @@ onMounted(load)
       <button class="new-card" @click="showCreate = true">
         <span class="new-card-plus"><Plus :size="20" /></span>
         <span>Project baru</span>
+        <span class="new-card-hint">Mulai dari timeline kosong</span>
       </button>
     </div>
 
@@ -167,7 +168,7 @@ onMounted(load)
       <div class="modal">
         <div class="modal-header">
           <div class="modal-title">Project baru</div>
-          <button class="icon-btn" @click="showCreate = false">✕</button>
+          <button class="icon-btn" title="Tutup" @click="showCreate = false"><X :size="15" /></button>
         </div>
         <div class="modal-body">
           <div class="field">
@@ -222,8 +223,7 @@ onMounted(load)
   min-height: 0;
   overflow: auto;
   padding: 34px 40px 20px;
-  background: radial-gradient(circle at 18% -10%, rgba(124, 108, 255, 0.16), transparent 42%),
-    radial-gradient(circle at 90% 0%, rgba(35, 213, 180, 0.08), transparent 38%), var(--bg);
+  background: var(--bg);
 }
 
 .launcher-head {
@@ -244,13 +244,12 @@ onMounted(load)
 .brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 13px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #7c6cff, #4c7dff);
-  color: #fff;
-  box-shadow: 0 10px 30px rgba(124, 108, 255, 0.4);
+  background: var(--panel-3);
+  color: var(--text);
 }
 
 .launcher-head h1 {
@@ -297,13 +296,13 @@ onMounted(load)
 .empty-icon {
   width: 58px;
   height: 58px;
-  border-radius: 18px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-strong);
-  background: var(--accent-soft);
-  border: 1px solid rgba(124, 108, 255, 0.25);
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
 }
 
 .load-dots {
@@ -315,7 +314,7 @@ onMounted(load)
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--muted);
   animation: pulse 1s ease-in-out infinite;
 }
 
@@ -350,17 +349,16 @@ onMounted(load)
 .project-card {
   background: var(--panel);
   border: 1px solid var(--border-soft);
-  border-radius: 13px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: transform 0.16s ease, border-color 0.16s ease;
   animation: card-in 0.3s ease both;
 }
 
 .project-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(124, 108, 255, 0.4);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  border-color: #4a4a4a;
 }
 
 @keyframes card-in {
@@ -380,23 +378,23 @@ onMounted(load)
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.72);
-  background: linear-gradient(135deg, rgba(124, 108, 255, 0.28), rgba(76, 125, 255, 0.1) 55%, rgba(35, 213, 180, 0.14));
+  color: var(--muted-2);
+  background: var(--panel-2);
 }
 
 .card-art.vertical {
-  background: linear-gradient(135deg, rgba(35, 213, 180, 0.22), rgba(124, 108, 255, 0.22));
+  background: var(--panel-2);
 }
 
 .card-res {
   position: absolute;
   left: 10px;
   bottom: 9px;
-  font-size: 10px;
+  font-size: 11px;
   padding: 2px 7px;
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #d5d6e2;
+  background: rgba(0, 0, 0, 0.5);
+  color: #e6e6e6;
 }
 
 .card-export {
@@ -447,7 +445,7 @@ onMounted(load)
   align-items: center;
   gap: 5px;
   margin-top: 6px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted-2);
 }
 
@@ -466,20 +464,27 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   gap: 10px;
-  border-radius: 13px;
-  border: 1px dashed #343442;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px dashed #3a3a3a;
   background: transparent;
   color: var(--muted);
-  font-weight: 550;
-  transition: all 0.16s ease;
+  font-weight: 500;
+  transition: border-color 0.16s ease;
 }
 
 .new-card:hover {
-  border-color: var(--accent);
+  border-color: #6b6b6b;
   color: var(--text);
-  background: rgba(124, 108, 255, 0.06);
+  background: var(--panel);
+}
+
+.new-card-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-2);
 }
 
 .new-card-plus {
@@ -498,7 +503,7 @@ onMounted(load)
   margin: 30px auto 0;
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted-2);
 }
 
@@ -514,12 +519,12 @@ onMounted(load)
   border: 1px solid var(--border);
   background: var(--panel-2);
   color: var(--muted);
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .fps-chip.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: #6b6b6b;
+  background: var(--panel-3);
   color: var(--text);
 }
 </style>

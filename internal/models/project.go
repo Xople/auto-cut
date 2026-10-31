@@ -59,13 +59,16 @@ type Timeline struct {
 	Tracks       []Track      `json:"tracks"`
 }
 
-// Track holds clips of one kind. Order in the slice is the vertical order in the UI.
+// Track holds clips of one kind. Order in the slice is the vertical order in the UI:
+// index 0 is the topmost row, later rows are drawn underneath.
 type Track struct {
 	ID     string `json:"id"`
 	Kind   string `json:"kind"`
 	Name   string `json:"name"`
 	Muted  bool   `json:"muted"`
 	Locked bool   `json:"locked"`
+	Hidden bool   `json:"hidden"`
+	Height int    `json:"height"`
 	Clips  []Clip `json:"clips"`
 }
 
@@ -77,6 +80,10 @@ type Clip struct {
 	Duration float64 `json:"duration"`
 	In       float64 `json:"in"`
 	Out      float64 `json:"out"`
+	// Speed is a playback rate multiplier; 1 is normal. LinkedID ties a clip to
+	// its counterpart on another track so edits move both together.
+	Speed    float64 `json:"speed"`
+	LinkedID string  `json:"linked_id,omitempty"`
 
 	// Overlay transform. X/Y are the normalized center of the overlay (0..1).
 	X         float64 `json:"x"`
@@ -97,6 +104,35 @@ type Clip struct {
 
 	// Caption word timings in timeline seconds, used for karaoke highlight.
 	Words []WordTiming `json:"words,omitempty"`
+
+	// Transition plays at the start of the clip, over the layer below it.
+	Transition *Transition `json:"transition,omitempty"`
+
+	// Keyframes animate the transform above. Time is relative to the clip start.
+	Keyframes []TransformKeyframe `json:"keyframes,omitempty"`
+}
+
+// TransformKeyframe stores one transform pose on a clip. Values interpolate
+// linearly between consecutive keyframes.
+type TransformKeyframe struct {
+	Time     float64 `json:"time"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Scale    float64 `json:"scale"`
+	Rotation float64 `json:"rotation"`
+}
+
+// Transition kinds supported by the timeline.
+const (
+	TransitionPullIn     = "pull_in"
+	TransitionSlideRight = "slide_right"
+	TransitionSlideLeft  = "slide_left"
+)
+
+// Transition is a visual entrance effect at a clip's start.
+type Transition struct {
+	Type     string  `json:"type"`
+	Duration float64 `json:"duration"`
 }
 
 // End returns the clip end time on the timeline.
@@ -205,16 +241,16 @@ func NewTimeline(width, height int, fps float64) Timeline {
 		fps = 30
 	}
 	return Timeline{
-		Version:      1,
+		Version:      TimelineVersion,
 		Width:        width,
 		Height:       height,
 		FPS:          fps,
 		CaptionStyle: DefaultCaptionStyle(),
 		Tracks: []Track{
-			{ID: "video-main", Kind: TrackVideo, Name: "Video", Clips: []Clip{}},
-			{ID: "overlay", Kind: TrackOverlay, Name: "Overlay", Clips: []Clip{}},
-			{ID: "audio-main", Kind: TrackAudio, Name: "Audio", Clips: []Clip{}},
-			{ID: "caption", Kind: TrackCaption, Name: "Caption", Clips: []Clip{}},
+			{ID: "video-main", Kind: TrackVideo, Name: "Video", Height: DefaultTrackHeight, Clips: []Clip{}},
+			{ID: "overlay", Kind: TrackOverlay, Name: "Overlay", Height: DefaultTrackHeight, Clips: []Clip{}},
+			{ID: "audio-main", Kind: TrackAudio, Name: "Audio", Height: DefaultTrackHeight, Clips: []Clip{}},
+			{ID: "caption", Kind: TrackCaption, Name: "Caption", Height: DefaultTrackHeight, Clips: []Clip{}},
 		},
 	}
 }

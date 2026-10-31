@@ -72,7 +72,15 @@ async function commitName() {
       <div class="project-sub">
         <span>{{ projectMeta }}</span>
         <span class="dot-sep">·</span>
-        <span class="save-state" :class="editor.saveState">{{ saveLabel }}</span>
+        <button
+          type="button"
+          class="save-state"
+          :class="editor.saveState"
+          title="Simpan sekarang (Ctrl+S)"
+          @click="editor.saveNow()"
+        >
+          {{ saveLabel }}
+        </button>
       </div>
     </div>
 
@@ -110,7 +118,7 @@ async function commitName() {
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  background: #0b0b10;
+  background: var(--bg);
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -124,7 +132,7 @@ async function commitName() {
   border: 1px solid var(--border-soft);
   background: transparent;
   color: var(--muted);
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .back-btn:hover {
@@ -138,10 +146,9 @@ async function commitName() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #7c6cff, #4c7dff);
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(124, 108, 255, 0.35);
+  border-radius: 8px;
+  background: var(--panel-3);
+  color: var(--text);
 }
 
 .project-block {
@@ -171,15 +178,15 @@ async function commitName() {
 }
 
 .project-name:focus {
-  background: #0a0a0f;
-  border-color: var(--accent);
+  background: #0d0d0d;
+  border-color: #6b6b6b;
 }
 
 .project-sub {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted-2);
   padding-left: 0;
 }
@@ -189,7 +196,17 @@ async function commitName() {
 }
 
 .save-state {
-  color: var(--green);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--muted-2);
+  cursor: pointer;
+}
+
+.save-state:hover {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .save-state.saving {

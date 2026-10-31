@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"autocut/internal/captions"
+	"autocut/internal/fonts"
 	"autocut/internal/models"
 	"autocut/internal/pipeline"
 	"autocut/internal/render"
@@ -47,6 +48,18 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleFonts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.projects.Fonts().List())
+}
+
+func (s *Server) handleFontFile(w http.ResponseWriter, r *http.Request) {
+	data, err := fonts.BundledFile(r.PathValue("id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "font/ttf")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+	_, _ = w.Write(data)
 }
 
 func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
@@ -132,10 +145,6 @@ func (s *Server) handleSaveTimeline(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Timeline tidak valid: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	if len(tl.Tracks) == 0 {
-		http.Error(w, "Timeline harus memiliki minimal satu track", http.StatusBadRequest)
-		return
-	}
 	if tl.Width <= 0 {
 		tl.Width = p.Width
 	}
@@ -145,8 +154,10 @@ func (s *Server) handleSaveTimeline(w http.ResponseWriter, r *http.Request) {
 	if tl.FPS <= 0 {
 		tl.FPS = p.FPS
 	}
-	if tl.Version == 0 {
-		tl.Version = 1
+	models.NormalizeTimeline(&tl)
+	if err := models.ValidateTimeline(tl); err != nil {
+		http.Error(w, "Timeline tidak valid: "+err.Error(), http.StatusBadRequest)
+		return
 	}
 	if err := s.projects.SaveTimeline(id, &tl); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -379,7 +390,8 @@ func (s *Server) handleApplyCuts(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
 	var body struct {
-		Replace *bool `json:"replace"`
+		Replace *bool  `json:"replace"`
+		TrackID string `json:"track_id"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
@@ -412,22 +424,30 @@ func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) 
 	}
 	target := -1
 	for i := range p.Timeline.Tracks {
-		if p.Timeline.Tracks[i].Kind != models.TrackCaption {
+		track := &p.Timeline.Tracks[i]
+		if track.Kind != models.TrackCaption {
 			continue
 		}
-		if target < 0 {
+		if body.TrackID != "" && track.ID == body.TrackID {
+			target = i
+		} else if body.TrackID == "" && target < 0 {
 			target = i
 		}
 		if replace {
-			p.Timeline.Tracks[i].Clips = []models.Clip{}
+			track.Clips = []models.Clip{}
 		}
+	}
+	if body.TrackID != "" && target < 0 {
+		http.Error(w, "Track caption tidak ditemukan", http.StatusBadRequest)
+		return
 	}
 	if target < 0 {
 		p.Timeline.Tracks = append(p.Timeline.Tracks, models.Track{
-			ID:    "caption",
-			Kind:  models.TrackCaption,
-			Name:  "Caption",
-			Clips: []models.Clip{},
+			ID:     uniqueTrackID(p.Timeline.Tracks, "caption"),
+			Kind:   models.TrackCaption,
+			Name:   "Caption",
+			Height: models.DefaultTrackHeight,
+			Clips:  []models.Clip{},
 		})
 		target = len(p.Timeline.Tracks) - 1
 	}
@@ -653,6 +673,22 @@ func (s *Server) attachLastExport(p *models.Project) *models.Project {
 		}
 	}
 	return p
+}
+
+func uniqueTrackID(tracks []models.Track, base string) string {
+	used := make(map[string]bool, len(tracks))
+	for _, track := range tracks {
+		used[track.ID] = true
+	}
+	if !used[base] {
+		return base
+	}
+	for i := 2; ; i++ {
+		id := fmt.Sprintf("%s-%d", base, i)
+		if !used[id] {
+			return id
+		}
+	}
 }
 
 func exportFileName(requested, projectName string) string {

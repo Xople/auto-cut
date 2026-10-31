@@ -38,11 +38,8 @@ func scanProject(sc rowScanner) (*models.Project, error) {
 	}
 	if p.Timeline.Version == 0 {
 		p.Timeline = models.NewTimeline(p.Width, p.Height, p.FPS)
-	}
-	if p.Timeline.Width == 0 {
-		p.Timeline.Width = p.Width
-		p.Timeline.Height = p.Height
-		p.Timeline.FPS = p.FPS
+	} else {
+		models.NormalizeTimeline(&p.Timeline)
 	}
 	p.HasTranscript = transcriptJSON != ""
 	return &p, nil
@@ -76,6 +73,7 @@ func (d *DB) UpdateProjectName(id, name string) error {
 }
 
 func (d *DB) SaveTimeline(projectID string, t *models.Timeline) error {
+	models.NormalizeTimeline(t)
 	data, err := json.Marshal(t)
 	if err != nil {
 		return err

@@ -41,6 +41,7 @@ type RenderRequest struct {
 // Render builds and executes the ffmpeg graph for a timeline.
 func (r *Renderer) Render(ctx context.Context, req RenderRequest) error {
 	tl := req.Timeline
+	models.NormalizeTimeline(&tl)
 	width, height := tl.Width, tl.Height
 	if width <= 0 {
 		width = 1920
@@ -100,14 +101,11 @@ func (r *Renderer) Render(ctx context.Context, req RenderRequest) error {
 	}
 
 	b := newGraphBuilder()
-	if _, err := buildVideo(b, tl, req.Assets, width, height, fps, total); err != nil {
-		return err
-	}
-	audioOut, err := buildAudio(b, tl, req.Assets, total)
+	composited, err := buildVisual(b, tl, req.Assets, overlayPaths, width, height, fps, total)
 	if err != nil {
 		return err
 	}
-	composited, err := buildOverlays(b, tl, overlayPaths, fps, total)
+	audioOut, err := buildAudio(b, tl, req.Assets, total)
 	if err != nil {
 		return err
 	}
@@ -119,7 +117,8 @@ func (r *Renderer) Render(ctx context.Context, req RenderRequest) error {
 
 	finalVideo := composited
 	if hasCaptions {
-		b.add("%sass=filename='%s':fontsdir='%s'[vcap]", composited, escapeFilterValue(captionPath), escapeFilterValue(windowsFontsDir()))
+		fontDir := r.captionFontsDir(cacheDir, tl.CaptionStyle)
+		b.add("%sass=filename='%s':fontsdir='%s'[vcap]", composited, escapeFilterValue(captionPath), escapeFilterValue(fontDir))
 		finalVideo = "[vcap]"
 	}
 	if outW != width || outH != height {
@@ -398,96 +397,265 @@ func (b *graphBuilder) inputArgs() []string {
 	return args
 }
 
-type videoPlan struct {
-	clip  models.Clip
-	asset *models.Asset
-	in    float64
-	out   float64
-	eff   float64
-}
+// buildVisual composites every visible video and overlay track onto a black
+// canvas. Video tracks form the base and overlay tracks always paint above
+// them, matching the preview. Within one kind the first track is the upper
+// layer, so tracks are walked last to first. Each video clip keeps its own
+// audio handled by buildAudio.
+func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.Asset, overlayPaths map[string]string, width, height int, fps, total float64) (string, error) {
+	b.add("color=c=black:s=%dx%d:r=%s:d=%s,setsar=1,format=rgba[bov0]",
+		width, height, formatSeconds(fps), formatSeconds(total))
+	base := "[bov0]"
 
-func buildVideo(b *graphBuilder, tl models.Timeline, assets map[string]*models.Asset, width, height int, fps, total float64) (string, error) {
-	clips := firstTrackClips(tl, models.TrackVideo)
-	sortClips(clips)
-
-	plans := make([]videoPlan, 0, len(clips))
 	counts := map[string]int{}
-	for _, clip := range clips {
-		asset := assets[clip.AssetID]
-		plan := videoPlan{clip: clip, asset: asset}
-		if asset != nil && asset.Kind == models.AssetVideo {
-			in := clip.In
-			out := clip.In + clip.Duration
-			if clip.Out > clip.In {
-				out = clip.Out
-			}
-			if asset.Duration > 0 && out > asset.Duration {
-				out = asset.Duration
-			}
-			if out-in > 0.02 {
-				plan.in = in
-				plan.out = out
-				plan.eff = math.Min(clip.Duration, out-in)
-				counts[clip.AssetID]++
-			}
-		}
-		plans = append(plans, plan)
-	}
-
-	indices := map[string]int{}
-	for assetID := range counts {
-		asset := assets[assetID]
-		indices[assetID] = b.input("asset:"+assetID, "-i", asset.Path)
-	}
-	used := map[string]int{}
-	segments := []string{}
-	cursor := 0.0
-	gap := func(duration float64) {
-		if duration <= 0.005 {
-			return
-		}
-		label := fmt.Sprintf("[gap%d]", b.nextLabel())
-		b.add("color=c=black:s=%dx%d:r=%s:d=%s,setsar=1,format=yuv420p%s", width, height, formatSeconds(fps), formatSeconds(duration), label)
-		segments = append(segments, label)
-	}
-
-	for _, plan := range plans {
-		if plan.clip.Start > cursor+0.005 {
-			gap(plan.clip.Start - cursor)
-			cursor = plan.clip.Start
-		}
-		if plan.eff <= 0 {
-			gap(plan.clip.Duration)
-			cursor = plan.clip.Start + plan.clip.Duration
+	for _, track := range tl.Tracks {
+		if track.Hidden || track.Kind != models.TrackVideo {
 			continue
 		}
-		labels := b.labels("asset:"+plan.clip.AssetID, "v", indices[plan.clip.AssetID], counts[plan.clip.AssetID])
-		src := labels[used[plan.clip.AssetID]]
-		used[plan.clip.AssetID]++
-		label := fmt.Sprintf("[vc%d]", b.nextLabel())
-		b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p%s",
-			src, formatSeconds(plan.in), formatSeconds(plan.out), formatSeconds(fps), width, height, width, height, label)
-		segments = append(segments, label)
-		cursor = plan.clip.Start + plan.eff
-		if plan.eff < plan.clip.Duration-0.005 {
-			gap(plan.clip.Duration - plan.eff)
-			cursor = plan.clip.Start + plan.clip.Duration
+		for _, clip := range track.Clips {
+			asset := assets[clip.AssetID]
+			if asset == nil || asset.Kind != models.AssetVideo {
+				continue
+			}
+			if _, _, ok := clipSourceRange(clip, asset.Duration); !ok {
+				continue
+			}
+			counts[clip.AssetID]++
 		}
 	}
-	if cursor < total-0.005 {
-		gap(total - cursor)
+	indices := map[string]int{}
+	for assetID := range counts {
+		indices[assetID] = b.input("asset:"+assetID, "-i", assets[assetID].Path)
+	}
+	used := map[string]int{}
+
+	compositeKind := func(kind string) {
+		for i := len(tl.Tracks) - 1; i >= 0; i-- {
+			track := tl.Tracks[i]
+			if track.Hidden || track.Kind != kind {
+				continue
+			}
+			clips := append([]models.Clip{}, track.Clips...)
+			sortClips(clips)
+			for _, clip := range clips {
+				if clip.Start >= total || math.Min(clip.Start+clip.Duration, total) <= clip.Start+0.001 {
+					continue
+				}
+
+				if kind == models.TrackOverlay {
+					path := overlayPaths[clip.ID]
+					if path == "" {
+						continue
+					}
+					idx := b.input("overlay:"+clip.ID,
+						"-loop", "1", "-t", formatSeconds(total), "-framerate", formatSeconds(fps), "-i", path)
+					src := fmt.Sprintf("[ov%d]", b.nextLabel())
+					b.add("[%d:v]format=rgba%s", idx, src)
+					base = compositeLayer(b, base, src, clip, width, height, "", "")
+					continue
+				}
+
+				asset := assets[clip.AssetID]
+				if asset == nil || asset.Kind != models.AssetVideo {
+					continue
+				}
+				in, out, ok := clipSourceRange(clip, asset.Duration)
+				if !ok {
+					continue
+				}
+				labels := b.labels("asset:"+asset.ID, "v", indices[asset.ID], counts[asset.ID])
+				if used[asset.ID] >= len(labels) {
+					continue
+				}
+				source := labels[used[asset.ID]]
+				used[asset.ID]++
+
+				src := fmt.Sprintf("[vc%d]", b.nextLabel())
+				b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease,format=rgba,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,setsar=1,setpts=PTS+%s/TB%s",
+					source, formatSeconds(in), formatSeconds(out), formatSeconds(fps),
+					width, height, width, height, formatSeconds(clip.Start), src)
+
+				src, offsetX, offsetY := applyClipTransform(b, src, clip, width, height)
+				base = compositeLayer(b, base, src, clip, width, height, offsetX, offsetY)
+			}
+		}
 	}
 
-	if len(segments) == 0 {
-		b.add("color=c=black:s=%dx%d:r=%s:d=%s,setsar=1,format=yuv420p[base0]", width, height, formatSeconds(fps), formatSeconds(total))
-		return "[base0]", nil
+	compositeKind(models.TrackVideo)
+	compositeKind(models.TrackOverlay)
+
+	b.add("%sformat=yuv420p[basev]", base)
+	return "[basev]", nil
+}
+
+func clipKeyframes(clip models.Clip) []models.TransformKeyframe {
+	if len(clip.Keyframes) == 0 {
+		return nil
 	}
-	if len(segments) == 1 {
-		b.add("%snull[base0]", segments[0])
-		return "[base0]", nil
+	frames := append([]models.TransformKeyframe{}, clip.Keyframes...)
+	sort.SliceStable(frames, func(i, j int) bool { return frames[i].Time < frames[j].Time })
+	return frames
+}
+
+func keyframesDiffer(frames []models.TransformKeyframe, pick func(models.TransformKeyframe) float64) bool {
+	if len(frames) < 2 {
+		return false
 	}
-	b.add("%sconcat=n=%d:v=1:a=0[base0]", strings.Join(segments, ""), len(segments))
-	return "[base0]", nil
+	first := pick(frames[0])
+	for _, frame := range frames[1:] {
+		if math.Abs(pick(frame)-first) > 0.0005 {
+			return true
+		}
+	}
+	return false
+}
+
+// transformValueExpr renders a value as an ffmpeg expression, interpolating
+// linearly between keyframes. Times are relative to the clip start.
+func transformValueExpr(clip models.Clip, base float64, pick func(models.TransformKeyframe) float64) string {
+	frames := clipKeyframes(clip)
+	if len(frames) == 0 {
+		return formatSeconds(base)
+	}
+	if !keyframesDiffer(frames, pick) {
+		return formatSeconds(pick(frames[0]))
+	}
+	local := fmt.Sprintf("(t-%s)", formatSeconds(clip.Start))
+	expr := formatSeconds(pick(frames[len(frames)-1]))
+	for i := len(frames) - 2; i >= 0; i-- {
+		from := frames[i]
+		to := frames[i+1]
+		span := to.Time - from.Time
+		value := formatSeconds(pick(to))
+		if span > 0.0001 {
+			value = fmt.Sprintf("(%s+(%s-%s)*(%s-%s)/%s)",
+				formatSeconds(pick(from)), formatSeconds(pick(to)), formatSeconds(pick(from)),
+				local, formatSeconds(from.Time), formatSeconds(span))
+		}
+		expr = fmt.Sprintf("if(lt(%s,%s),%s,%s)", local, formatSeconds(to.Time), value, expr)
+	}
+	return fmt.Sprintf("if(lt(%s,%s),%s,%s)", local, formatSeconds(frames[0].Time), formatSeconds(pick(frames[0])), expr)
+}
+
+func quoteOverlayExpr(expr string) string {
+	if expr == "0" {
+		return expr
+	}
+	return "'" + strings.ReplaceAll(expr, "'", "") + "'"
+}
+
+// applyClipTransform bakes scale/rotation into the layer and returns overlay
+// x/y offsets. The layer is normalized back to canvas size so overlay and blend
+// filters see a stable frame size.
+func applyClipTransform(b *graphBuilder, src string, clip models.Clip, width, height int) (string, string, string) {
+	frames := clipKeyframes(clip)
+	scaleExpr := transformValueExpr(clip, clip.Scale, func(frame models.TransformKeyframe) float64 { return frame.Scale })
+	rotationExpr := transformValueExpr(clip, clip.Rotation, func(frame models.TransformKeyframe) float64 { return frame.Rotation })
+	scaleAnimated := keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.Scale })
+	rotationAnimated := keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.Rotation })
+
+	pullIn := clip.Transition != nil && clip.Transition.Type == models.TransitionPullIn && clip.Transition.Duration > 0
+	pullExpr := ""
+	if pullIn {
+		pullExpr = fmt.Sprintf("(1+0.18*max(0,1-(t-%s)/%s))",
+			formatSeconds(math.Max(0, clip.Start)), formatSeconds(clip.Transition.Duration))
+		faded := fmt.Sprintf("[vf%d]", b.nextLabel())
+		b.add("%sfade=t=in:st=%s:d=%s:alpha=1%s",
+			src, formatSeconds(math.Max(0, clip.Start)), formatSeconds(clip.Transition.Duration), faded)
+		src = faded
+	}
+
+	scaleChanged := scaleAnimated || math.Abs(clip.Scale-1) > 0.0001
+	if scaleChanged || pullIn {
+		factor := scaleExpr
+		if pullIn {
+			factor = fmt.Sprintf("(%s)*%s", scaleExpr, pullExpr)
+		}
+		scaled := fmt.Sprintf("[vsc%d]", b.nextLabel())
+		b.add("%sscale=w='trunc(iw*(%s)/2)*2':h=-2:eval=frame%s", src, factor, scaled)
+		cropped := fmt.Sprintf("[vcr%d]", b.nextLabel())
+		b.add("%scrop=w='min(iw,%d)':h='min(ih,%d)':x='(iw-min(iw,%d))/2':y='(ih-min(ih,%d))/2'%s",
+			scaled, width, height, width, height, cropped)
+		padded := fmt.Sprintf("[vpd%d]", b.nextLabel())
+		b.add("%spad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0:eval=frame%s",
+			cropped, width, height, padded)
+		src = padded
+	}
+
+	if rotationAnimated || math.Abs(clip.Rotation) > 0.0001 {
+		rotated := fmt.Sprintf("[vrt%d]", b.nextLabel())
+		b.add("%srotate=a='(%s)*0.0174532925199433':ow=iw:oh=ih:c=black@0%s", src, rotationExpr, rotated)
+		src = rotated
+	}
+
+	if opacity := clamp01(clip.Opacity); opacity < 0.999 {
+		faded := fmt.Sprintf("[lvo%d]", b.nextLabel())
+		b.add("%scolorchannelmixer=aa=%.3f%s", src, opacity, faded)
+		src = faded
+	}
+
+	xValue := transformValueExpr(clip, clip.X, func(frame models.TransformKeyframe) float64 { return frame.X })
+	yValue := transformValueExpr(clip, clip.Y, func(frame models.TransformKeyframe) float64 { return frame.Y })
+	xExpr := "0"
+	yExpr := "0"
+	if math.Abs(clip.X-0.5) > 0.0005 || keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.X }) {
+		xExpr = fmt.Sprintf("(%s-0.5)*%d", xValue, width)
+	}
+	if math.Abs(clip.Y-0.5) > 0.0005 || keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.Y }) {
+		yExpr = fmt.Sprintf("(%s-0.5)*%d", yValue, height)
+	}
+	return src, xExpr, yExpr
+}
+
+func compositeLayer(b *graphBuilder, base, src string, clip models.Clip, width, height int, offsetX, offsetY string) string {
+	start := math.Max(0, clip.Start)
+	end := clip.Start + clip.Duration
+	enable := fmt.Sprintf("enable='between(t,%s,%s)'", formatSeconds(start), formatSeconds(end))
+	xExpr := offsetX
+	yExpr := offsetY
+	if xExpr == "" {
+		xExpr = "0"
+	}
+	if yExpr == "" {
+		yExpr = "0"
+	}
+	if transition := clip.Transition; transition != nil {
+		switch transition.Type {
+		case models.TransitionSlideRight, models.TransitionSlideLeft:
+			offset := fmt.Sprintf("W*(1-(t-%s)/%s)", formatSeconds(start), formatSeconds(transition.Duration))
+			if transition.Type == models.TransitionSlideLeft {
+				offset = "-(" + offset + ")"
+			}
+			if xExpr != "0" {
+				offset = fmt.Sprintf("(%s)+%s", xExpr, offset)
+			}
+			xExpr = fmt.Sprintf("if(lt(t,%s),%s,%s)", formatSeconds(start+transition.Duration), offset, xExpr)
+		case models.TransitionPullIn:
+			if offsetX == "" {
+				xExpr = "(W-w)/2"
+			}
+			if offsetY == "" {
+				yExpr = "(H-h)/2"
+			}
+		}
+	}
+
+	next := fmt.Sprintf("[bov%d]", b.nextLabel())
+	mode := normalizeBlendMode(clip.BlendMode)
+	if mode == "normal" {
+		b.add("%s%soverlay=x=%s:y=%s:eof_action=pass:format=auto:%s%s", base, src, quoteOverlayExpr(xExpr), quoteOverlayExpr(yExpr), enable, next)
+		return next
+	}
+
+	srcA := fmt.Sprintf("[ova%d]", b.nextLabel())
+	srcB := fmt.Sprintf("[ovb%d]", b.nextLabel())
+	blended := fmt.Sprintf("[bl%d]", b.nextLabel())
+	mask := fmt.Sprintf("[mask%d]", b.nextLabel())
+	b.add("%ssplit%s%s", src, srcA, srcB)
+	b.add("%s%sblend=all_mode=%s:%s%s", base, srcA, mode, enable, blended)
+	b.add("%salphaextract%s", srcB, mask)
+	b.add("%s%s%smaskedmerge=%s%s", base, blended, mask, enable, next)
+	return next
 }
 
 type audioPlan struct {
@@ -498,12 +666,42 @@ type audioPlan struct {
 }
 
 func buildAudio(b *graphBuilder, tl models.Timeline, assets map[string]*models.Asset, total float64) (string, error) {
-	var clips []models.Clip
+	// Legacy projects keep a video's audio as a linked clip on the audio track.
+	// When that pair exists, the audio clip owns playback and the video clip's
+	// built-in stream is skipped so the sound is not doubled. Some old projects
+	// stored the twin without a link, so mirror them by asset and timing too.
+	linkedAudio := map[string]bool{}
+	audioTwins := map[string][]models.Clip{}
 	for _, track := range tl.Tracks {
-		if track.Kind != models.TrackAudio || track.Muted {
+		if track.Kind != models.TrackAudio {
 			continue
 		}
-		clips = append(clips, track.Clips...)
+		for _, clip := range track.Clips {
+			if clip.LinkedID != "" {
+				linkedAudio[clip.LinkedID] = true
+			}
+			if clip.AssetID != "" {
+				audioTwins[clip.AssetID] = append(audioTwins[clip.AssetID], clip)
+			}
+		}
+	}
+
+	var clips []models.Clip
+	for _, track := range tl.Tracks {
+		if track.Muted || track.Hidden {
+			continue
+		}
+		if track.Kind != models.TrackAudio && track.Kind != models.TrackVideo {
+			continue
+		}
+		for _, clip := range track.Clips {
+			if track.Kind == models.TrackVideo {
+				if linkedAudio[clip.ID] || hasAudioTwin(clip, audioTwins[clip.AssetID]) {
+					continue
+				}
+			}
+			clips = append(clips, clip)
+		}
 	}
 	sortClips(clips)
 
@@ -567,63 +765,12 @@ func buildAudio(b *graphBuilder, tl models.Timeline, assets map[string]*models.A
 
 	mixLabel := "[amixed0]"
 	if len(mixed) == 1 {
-		b.add("%snull%s", mixed[0], mixLabel)
+		b.add("%sanull%s", mixed[0], mixLabel)
 	} else {
 		b.add("%samix=inputs=%d:duration=longest:normalize=0%s", strings.Join(mixed, ""), len(mixed), mixLabel)
 	}
 	b.add("%sapad=whole_dur=%s,atrim=end=%s[aout]", mixLabel, formatSeconds(total), formatSeconds(total))
 	return "[aout]", nil
-}
-
-func buildOverlays(b *graphBuilder, tl models.Timeline, paths map[string]string, fps, total float64) (string, error) {
-	clips := collectClips(tl, models.TrackOverlay)
-	if len(clips) == 0 {
-		return "[base0]", nil
-	}
-	sortClips(clips)
-	b.add("[base0]format=rgba[bov0]")
-	base := "[bov0]"
-
-	for _, clip := range clips {
-		if clip.Start >= total {
-			continue
-		}
-		path := paths[clip.ID]
-		if path == "" {
-			continue
-		}
-		end := math.Min(clip.End(), total)
-		if end <= clip.Start+0.001 {
-			continue
-		}
-		idx := b.input("overlay:"+clip.ID,
-			"-loop", "1", "-t", formatSeconds(total), "-framerate", formatSeconds(fps), "-i", path)
-		ov := fmt.Sprintf("[ov%d]", b.nextLabel())
-		b.add("[%d:v]format=rgba%s", idx, ov)
-		next := fmt.Sprintf("[bov%d]", b.nextLabel())
-
-		mode := normalizeBlendMode(clip.BlendMode)
-		if mode == "normal" {
-			b.add("%s%soverlay=0:0:format=auto:enable='between(t,%s,%s)'%s",
-				base, ov, formatSeconds(clip.Start), formatSeconds(end), next)
-			base = next
-			continue
-		}
-
-		ovA := fmt.Sprintf("[ova%d]", b.nextLabel())
-		ovB := fmt.Sprintf("[ovb%d]", b.nextLabel())
-		blended := fmt.Sprintf("[bl%d]", b.nextLabel())
-		mask := fmt.Sprintf("[mask%d]", b.nextLabel())
-		enabled := fmt.Sprintf("enable='between(t,%s,%s)'", formatSeconds(clip.Start), formatSeconds(end))
-		b.add("%ssplit%s%s", ov, ovA, ovB)
-		b.add("%s%sblend=all_mode=%s:%s%s", base, ovA, mode, enabled, blended)
-		b.add("%salphaextract%s", ovB, mask)
-		b.add("%s%s%smaskedmerge=%s%s", base, blended, mask, enabled, next)
-		base = next
-	}
-
-	b.add("%sformat=yuv420p[basev]", base)
-	return "[basev]", nil
 }
 
 func buildCaptions(tl models.Timeline, cacheDir string, width, height int) (string, bool, error) {
@@ -644,7 +791,7 @@ func buildCaptions(tl models.Timeline, cacheDir string, width, height int) (stri
 func collectClips(tl models.Timeline, kind string) []models.Clip {
 	var clips []models.Clip
 	for _, track := range tl.Tracks {
-		if track.Kind != kind || track.Muted {
+		if track.Kind != kind || track.Hidden || track.Muted {
 			continue
 		}
 		clips = append(clips, track.Clips...)
@@ -652,13 +799,30 @@ func collectClips(tl models.Timeline, kind string) []models.Clip {
 	return clips
 }
 
-func firstTrackClips(tl models.Timeline, kind string) []models.Clip {
-	for _, track := range tl.Tracks {
-		if track.Kind == kind && !track.Muted {
-			return append([]models.Clip{}, track.Clips...)
+func hasAudioTwin(clip models.Clip, twins []models.Clip) bool {
+	for _, twin := range twins {
+		if math.Abs(twin.Start-clip.Start) <= 0.06 &&
+			math.Abs(twin.Duration-clip.Duration) <= 0.06 &&
+			math.Abs(twin.In-clip.In) <= 0.06 {
+			return true
 		}
 	}
-	return nil
+	return false
+}
+
+func clipSourceRange(clip models.Clip, assetDuration float64) (float64, float64, bool) {
+	in := clip.In
+	out := clip.In + clip.Duration
+	if clip.Out > clip.In {
+		out = clip.Out
+	}
+	if assetDuration > 0 && out > assetDuration {
+		out = assetDuration
+	}
+	if out-in <= 0.02 {
+		return 0, 0, false
+	}
+	return in, out, true
 }
 
 func sortClips(clips []models.Clip) {
@@ -789,6 +953,17 @@ func escapeFilterValue(value string) string {
 	value = strings.ReplaceAll(value, ":", "\\:")
 	value = strings.ReplaceAll(value, "'", "\\'")
 	return value
+}
+
+func (r *Renderer) captionFontsDir(cacheDir string, style models.CaptionStyle) string {
+	dir := filepath.Join(cacheDir, "fonts")
+	if err := fonts.ExportBundled(dir); err != nil {
+		return windowsFontsDir()
+	}
+	if err := r.fonts.ExportFace(dir, style.FontFamily, style.Bold, style.Italic); err != nil {
+		return windowsFontsDir()
+	}
+	return dir
 }
 
 func windowsFontsDir() string {

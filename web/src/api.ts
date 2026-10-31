@@ -97,6 +97,16 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(timeline),
     }),
+  saveTimelineKeepalive: (id: string, timeline: Timeline): void => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers['X-Autocut-Token'] = token
+    void fetch(url(`/api/projects/${id}/timeline`), {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(timeline),
+      keepalive: true,
+    }).catch(() => {})
+  },
 
   listAssets: (id: string) => request<Asset[]>(`/api/projects/${id}/assets`),
   importAsset: (id: string, file: File) => {
@@ -150,6 +160,10 @@ export function thumbUrl(projectId: string, assetId: string): string {
 
 export function waveformUrl(projectId: string, assetId: string): string {
   return url(`/api/projects/${projectId}/assets/${assetId}/waveform`)
+}
+
+export function fontFileUrl(fontId: string): string {
+  return url(`/api/fonts/${encodeURIComponent(fontId)}/file`)
 }
 
 export function exportDownloadUrl(projectId: string, exportId: string, play = false): string {

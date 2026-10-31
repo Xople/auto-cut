@@ -1,0 +1,11 @@
+D:\Dev\.Projects\AutoCut\src-tauri\target-build\release\deps\siphasher-a3fbdef4ba161d89.d: C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\lib.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\common.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip128.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\../README.md
+
+D:\Dev\.Projects\AutoCut\src-tauri\target-build\release\deps\libsiphasher-a3fbdef4ba161d89.rlib: C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\lib.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\common.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip128.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\../README.md
+
+D:\Dev\.Projects\AutoCut\src-tauri\target-build\release\deps\libsiphasher-a3fbdef4ba161d89.rmeta: C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\lib.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\common.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip128.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\../README.md
+
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\lib.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\common.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\sip128.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.4\src\../README.md:

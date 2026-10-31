@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Captions, Film, Layers, Music, Sparkles, Trash2, Wand2 } from 'lucide-vue-next'
+import { Captions, Diamond, Film, Layers, Music, RotateCcw, Sparkles, Trash2, Wand2 } from 'lucide-vue-next'
 import { useEditor } from '../stores/editor'
-import { BLEND_MODES, defaultTextStyle } from '../types'
+import { BLEND_MODES, defaultTextStyle, TRANSITIONS, type TransitionType } from '../types'
 import { formatSecondsShort } from '../lib/format'
+import { keyframeAt, transformAt } from '../lib/transform'
+import FontPicker from './FontPicker.vue'
 
 const emit = defineEmits<{
   (e: 'open-autocut'): void
@@ -27,6 +29,19 @@ watch(
 const asset = computed(() => (clip.value?.asset_id ? editor.assetMap.get(clip.value.asset_id) : undefined))
 const isText = computed(() => !!clip.value && clip.value.text !== undefined)
 const isCaption = computed(() => track.value?.kind === 'caption')
+const isVideoTransform = computed(() => track.value?.kind === 'video' && asset.value?.kind === 'video')
+// Only animated clips depend on the playhead; reading it conditionally keeps
+// static clips (the common case) out of the per-frame render loop.
+const transform = computed(() => {
+  if (!clip.value) return { x: 0.5, y: 0.5, scale: 1, rotation: 0 }
+  const playhead = clip.value.keyframes?.length ? editor.playhead : 0
+  return transformAt(clip.value, playhead)
+})
+const videoKeyframeHere = computed(() => {
+  if (!clip.value?.keyframes?.length) return false
+  return !!keyframeAt(clip.value, editor.playhead)
+})
+const videoKeyframeCount = computed(() => clip.value?.keyframes?.length ?? 0)
 
 function num(event: Event): number {
   return Number((event.target as HTMLInputElement).value)
@@ -35,6 +50,25 @@ function num(event: Event): number {
 function update(patch: Record<string, unknown>, key = '') {
   if (!selected.value) return
   editor.updateClip(selected.value.track.id, selected.value.clip.id, patch as never, key ? `${key}-${clip.value?.id}` : '')
+}
+
+function updateTransform(patch: Record<string, number>, key = '') {
+  if (!selected.value || !clip.value) return
+  if (isVideoTransform.value) {
+    editor.setClipTransform(selected.value.track.id, selected.value.clip.id, patch)
+    return
+  }
+  update(patch, key)
+}
+
+function toggleVideoKeyframe() {
+  if (!selected.value) return
+  editor.toggleClipKeyframe(selected.value.track.id, selected.value.clip.id)
+}
+
+function resetVideoTransform() {
+  if (!selected.value) return
+  editor.clearClipTransform(selected.value.track.id, selected.value.clip.id)
 }
 
 function updateStyle(patch: Record<string, unknown>, key = 'text') {
@@ -50,6 +84,27 @@ function updateStyle(patch: Record<string, unknown>, key = 'text') {
 
 function updateCaption(patch: Record<string, unknown>, key = 'cap') {
   editor.updateCaptionStyle(patch as never, `${key}-caption`)
+}
+
+function setTransition(type: TransitionType | 'none') {
+  if (!clip.value) return
+  editor.setClipTransition(type, undefined, clip.value.id)
+}
+
+function setTransitionDuration(duration: number) {
+  if (!clip.value?.transition || !track.value) return
+  const limit = Math.max(0.1, Math.min(3, clip.value.duration))
+  editor.updateClip(
+    track.value.id,
+    clip.value.id,
+    {
+      transition: {
+        type: clip.value.transition.type,
+        duration: Math.min(limit, Math.max(0.1, duration)),
+      },
+    },
+    'transition',
+  )
 }
 
 function trackIcon() {
@@ -124,30 +179,115 @@ function trackIcon() {
             </button>
           </div>
 
+          <template v-if="asset?.kind === 'video' && track.kind === 'video'">
+            <div class="section-title">Transisi masuk</div>
+            <div class="transition-grid">
+              <button
+                v-for="transition in TRANSITIONS"
+                :key="transition.value"
+                class="transition-btn"
+                :class="{ active: clip.transition?.type === transition.value }"
+                :title="transition.hint"
+                @click="setTransition(transition.value)"
+              >
+                {{ transition.label }}
+              </button>
+              <button
+                class="transition-btn"
+                :class="{ active: !clip.transition }"
+                @click="setTransition('none')"
+              >
+                Tanpa
+              </button>
+            </div>
+            <div v-if="clip.transition" class="field">
+              <div class="field-label">
+                <span>Durasi transisi</span>
+                <span class="value">{{ clip.transition.duration.toFixed(2) }}s</span>
+              </div>
+              <input
+                type="range"
+                min="0.2"
+                max="3"
+                step="0.05"
+                :value="clip.transition.duration"
+                @input="setTransitionDuration(num($event))"
+              />
+            </div>
+            <div class="divider" />
+          </template>
+
           <div v-if="isCaption" class="notice">
             Caption memakai style global project. Atur font, stroke, highlight, dan blend di tab
             <button class="link" @click="tab = 'caption'">Caption</button>.
           </div>
 
-          <template v-if="track.kind === 'overlay'">
+          <template v-if="track.kind === 'overlay' || isVideoTransform">
             <div class="section-title">Transform</div>
-            <div class="field">
-              <div class="field-label"><span>Posisi X</span><span class="value">{{ (clip.x * 100).toFixed(0) }}%</span></div>
-              <input type="range" min="0" max="1" step="0.005" :value="clip.x" @input="update({ x: num($event) }, 'x')" />
+            <div v-if="isVideoTransform" class="keyframe-row">
+              <button
+                class="kf-btn"
+                :class="{ active: videoKeyframeHere, animated: videoKeyframeCount > 0 }"
+                :title="videoKeyframeHere ? 'Hapus keyframe di playhead' : 'Tambah keyframe di playhead'"
+                @click="toggleVideoKeyframe"
+              >
+                <Diamond :size="12" :fill="videoKeyframeHere ? 'currentColor' : 'none'" />
+                {{ videoKeyframeHere ? 'Hapus keyframe' : 'Tambah keyframe' }}
+              </button>
+              <span class="kf-count">{{ videoKeyframeCount }} keyframe</span>
+              <button class="kf-reset" title="Reset transform & keyframe" @click="resetVideoTransform">
+                <RotateCcw :size="12" />
+              </button>
             </div>
             <div class="field">
-              <div class="field-label"><span>Posisi Y</span><span class="value">{{ (clip.y * 100).toFixed(0) }}%</span></div>
-              <input type="range" min="0" max="1" step="0.005" :value="clip.y" @input="update({ y: num($event) }, 'y')" />
+              <div class="field-label"><span>Posisi X</span><span class="value">{{ (transform.x * 100).toFixed(0) }}%</span></div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.005"
+                :value="transform.x"
+                @input="updateTransform({ x: num($event) }, 'x')"
+              />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>Posisi Y</span><span class="value">{{ (transform.y * 100).toFixed(0) }}%</span></div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.005"
+                :value="transform.y"
+                @input="updateTransform({ y: num($event) }, 'y')"
+              />
             </div>
             <div class="grid-2">
               <div class="field">
-                <div class="field-label"><span>Scale</span><span class="value">{{ clip.scale.toFixed(2) }}×</span></div>
-                <input type="range" min="0.05" max="3" step="0.01" :value="clip.scale" @input="update({ scale: num($event) }, 'scale')" />
+                <div class="field-label"><span>Scale</span><span class="value">{{ transform.scale.toFixed(2) }}×</span></div>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="3"
+                  step="0.01"
+                  :value="transform.scale"
+                  @input="updateTransform({ scale: num($event) }, 'scale')"
+                />
               </div>
               <div class="field">
-                <div class="field-label"><span>Rotasi</span><span class="value">{{ clip.rotation.toFixed(0) }}°</span></div>
-                <input type="range" min="-180" max="180" step="1" :value="clip.rotation" @input="update({ rotation: num($event) }, 'rot')" />
+                <div class="field-label"><span>Rotasi</span><span class="value">{{ transform.rotation.toFixed(0) }}°</span></div>
+                <input
+                  type="range"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  :value="transform.rotation"
+                  @input="updateTransform({ rotation: num($event) }, 'rot')"
+                />
               </div>
+            </div>
+            <div v-if="isVideoTransform" class="hint">
+              Saat clip punya keyframe, setiap perubahan posisi/scale otomatis membuat keyframe di playhead. Drag di
+              preview untuk geser, tarik sudut untuk scale.
             </div>
             <div class="field">
               <div class="field-label"><span>Opacity</span><span class="value">{{ Math.round(clip.opacity * 100) }}%</span></div>
@@ -172,12 +312,12 @@ function trackIcon() {
               </div>
               <div class="field">
                 <label class="field-label">Font</label>
-                <input
-                  class="input"
-                  list="font-families"
-                  :value="clip.style?.font_family ?? 'Arial'"
-                  @change="updateStyle({ font_family: ($event.target as HTMLInputElement).value }, 'font')"
+                <FontPicker
+                  :model-value="clip.style?.font_family ?? 'Arial'"
+                  :fonts="editor.fonts"
+                  @update:model-value="updateStyle({ font_family: $event }, 'font')"
                 />
+                <div class="hint">Pilih 17 keluarga Google Fonts (OFL, aman komersial) atau font sistem.</div>
               </div>
               <div class="grid-2">
                 <div class="field">
@@ -274,6 +414,9 @@ function trackIcon() {
                 <input type="range" min="0" max="5" step="0.05" :value="clip.fade_out" @input="update({ fade_out: num($event) }, 'fo')" />
               </div>
             </div>
+            <div v-if="asset?.kind === 'video' && asset.has_audio" class="notice" style="margin: 10px 0 0">
+              Audio bawaan video menyatu dengan clip ini. Tidak ada clip terpisah di track Audio.
+            </div>
 
             <div class="divider" />
             <div class="section-title">Timing</div>
@@ -317,12 +460,12 @@ function trackIcon() {
 
         <div class="field">
           <label class="field-label">Font</label>
-          <input
-            class="input"
-            list="font-families"
-            :value="editor.project?.timeline.caption_style.font_family"
-            @change="updateCaption({ font_family: ($event.target as HTMLInputElement).value }, 'font')"
+          <FontPicker
+            :model-value="editor.project?.timeline.caption_style.font_family ?? 'Arial'"
+            :fonts="editor.fonts"
+            @update:model-value="updateCaption({ font_family: $event }, 'font')"
           />
+          <div class="hint">Pilih 17 keluarga Google Fonts (OFL, aman komersial) atau font sistem.</div>
         </div>
 
         <div class="grid-2">
@@ -497,12 +640,6 @@ function trackIcon() {
         </button>
       </template>
     </div>
-
-    <datalist id="font-families">
-      <option v-for="font in editor.fonts" :key="font.path + font.subfamily" :value="font.family">
-        {{ font.full_name }}
-      </option>
-    </datalist>
   </aside>
 </template>
 
@@ -569,20 +706,21 @@ function trackIcon() {
 .empty-icon {
   width: 40px;
   height: 40px;
-  border-radius: 11px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-strong);
-  background: var(--accent-soft);
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
 }
 
 .project-card,
 .shortcut-list {
   padding: 11px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border-soft);
-  background: #0c0c11;
+  background: #0d0d0d;
 }
 
 .kv {
@@ -619,20 +757,11 @@ function trackIcon() {
   color: var(--muted);
 }
 
-.clip-kind.video {
-  color: #8c9cff;
-}
-
-.clip-kind.audio {
-  color: var(--teal);
-}
-
-.clip-kind.overlay {
-  color: var(--amber);
-}
-
+.clip-kind.video,
+.clip-kind.audio,
+.clip-kind.overlay,
 .clip-kind.caption {
-  color: #d99cff;
+  color: var(--muted);
 }
 
 .clip-title {
@@ -649,7 +778,7 @@ function trackIcon() {
 
 .clip-title .meta {
   margin-top: 2px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-2);
 }
 
@@ -657,6 +786,88 @@ function trackIcon() {
   display: flex;
   gap: 7px;
   margin-bottom: 14px;
+}
+
+.transition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.transition-btn {
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0d0d0d;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.transition-btn.active {
+  border-color: #6b6b6b;
+  background: var(--panel-3);
+  color: var(--text);
+}
+
+.keyframe-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.kf-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 27px;
+  padding: 0 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0d0d0d;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.kf-btn:hover {
+  color: var(--text);
+  border-color: #4a4a4a;
+}
+
+.kf-btn.animated {
+  color: var(--accent);
+}
+
+.kf-btn.active {
+  border-color: rgba(198, 242, 78, 0.45);
+  background: rgba(198, 242, 78, 0.1);
+  color: var(--accent);
+}
+
+.kf-count {
+  font-size: 10.5px;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.kf-reset {
+  margin-left: auto;
+  width: 27px;
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.kf-reset:hover {
+  color: var(--text);
+  border-color: #4a4a4a;
 }
 
 .btn.small {
@@ -667,19 +878,19 @@ function trackIcon() {
 
 .notice {
   padding: 10px 11px;
-  border-radius: 9px;
-  border: 1px solid rgba(124, 108, 255, 0.25);
-  background: rgba(124, 108, 255, 0.08);
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--panel-2);
   font-size: 11.5px;
   line-height: 1.55;
-  color: #c5c0ff;
+  color: var(--muted);
   margin-bottom: 12px;
 }
 
 .link {
   border: none;
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--text);
   padding: 0;
   text-decoration: underline;
   cursor: pointer;
@@ -694,9 +905,9 @@ function trackIcon() {
 .chip {
   width: 27px;
   height: 27px;
-  border-radius: 7px;
+  border-radius: 6px;
   border: 1px solid var(--border);
-  background: #0c0c11;
+  background: #0d0d0d;
   color: var(--muted);
   font-weight: 700;
   font-size: 12px;
@@ -707,8 +918,8 @@ function trackIcon() {
 }
 
 .chip.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: #6b6b6b;
+  background: var(--panel-3);
   color: var(--text);
 }
 
@@ -716,9 +927,9 @@ function trackIcon() {
   margin-top: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: #0c0c11;
+  background: #0d0d0d;
   border: 1px solid var(--border-soft);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted);
   display: flex;
   align-items: center;

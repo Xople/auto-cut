@@ -27,11 +27,9 @@ const editor = useEditor()
   gap: 9px;
   max-width: min(560px, 86vw);
   padding: 9px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(22, 22, 29, 0.96);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: var(--panel-2);
   font-size: 12px;
   color: var(--text);
 }
@@ -40,7 +38,7 @@ const editor = useEditor()
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent-strong);
+  background: var(--muted);
   flex-shrink: 0;
 }
 

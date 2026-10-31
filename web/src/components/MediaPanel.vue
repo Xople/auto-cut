@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Film, Image as ImageIcon, Music, Plus, Trash2, Type, Upload, Wand2 } from 'lucide-vue-next'
 import { thumbUrl } from '../api'
 import { useEditor } from '../stores/editor'
@@ -12,6 +12,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
 const textDraft = ref('')
 const brokenThumbs = ref<Record<string, boolean>>({})
+const dragGhost = ref<{ asset: Asset; x: number; y: number } | null>(null)
 
 const projectId = computed(() => editor.project?.id ?? '')
 
@@ -27,17 +28,113 @@ async function onFilesPicked(event: Event) {
   await editor.importFiles(files)
 }
 
-async function onDrop(event: DragEvent) {
-  dragging.value = false
-  if (!event.dataTransfer?.files.length) return
-  await editor.importFiles(Array.from(event.dataTransfer.files))
+function filesFromDrop(event: DragEvent): File[] {
+  const transfer = event.dataTransfer
+  if (!transfer) return []
+  if (transfer.files.length) return Array.from(transfer.files)
+  return Array.from(transfer.items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => !!file)
 }
 
-function onAssetDragStart(event: DragEvent, asset: Asset) {
-  if (!event.dataTransfer) return
-  event.dataTransfer.setData('application/x-autocut-asset', asset.id)
-  event.dataTransfer.setData('text/plain', asset.filename)
-  event.dataTransfer.effectAllowed = 'copy'
+async function onDrop(event: DragEvent) {
+  dragging.value = false
+  const files = filesFromDrop(event)
+  if (files.length) await editor.importFiles(files)
+}
+
+function preventWindowDrop(event: DragEvent) {
+  event.preventDefault()
+}
+
+onMounted(() => {
+  window.addEventListener('dragover', preventWindowDrop)
+  window.addEventListener('drop', preventWindowDrop)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('dragover', preventWindowDrop)
+  window.removeEventListener('drop', preventWindowDrop)
+  cancelAssetDrag()
+})
+
+let press: { asset: Asset; x: number; y: number } | null = null
+
+function onAssetPointerDown(event: PointerEvent, asset: Asset) {
+  if (event.button !== 0) return
+  if ((event.target as HTMLElement).closest('button')) return
+  press = { asset, x: event.clientX, y: event.clientY }
+  window.addEventListener('pointermove', onAssetPointerMove)
+  window.addEventListener('pointerup', onAssetPointerUp)
+  window.addEventListener('pointercancel', cancelAssetDrag)
+}
+
+function onAssetPointerMove(event: PointerEvent) {
+  if (!press) return
+  if (!dragGhost.value && Math.hypot(event.clientX - press.x, event.clientY - press.y) < 5) return
+  dragGhost.value = { asset: press.asset, x: event.clientX, y: event.clientY }
+  document.body.classList.add('asset-dragging')
+}
+
+function onAssetPointerUp(event: PointerEvent) {
+  const asset = press?.asset
+  const wasDragging = !!dragGhost.value
+  cancelAssetDrag()
+  if (!wasDragging || !asset) return
+  const element = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null
+  const lane =
+    (element?.closest('.lane') as HTMLElement | null) ??
+    (document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .map((item) => item.closest('.lane') as HTMLElement | null)
+      .find((item): item is HTMLElement => !!item) ??
+      null)
+  const content = document.querySelector('.timeline-content') as HTMLElement | null
+  const left = content?.getBoundingClientRect().left ?? 0
+  const pps = 44 * editor.zoom
+  const time = Math.max(0, (event.clientX - left) / pps)
+  if (!lane) {
+    if (asset.kind === 'video') dropOnNewVideoLayer(asset, time, event)
+    return
+  }
+  const trackId = lane.dataset.trackId
+  if (!trackId) return
+  const track = editor.project?.timeline.tracks.find((item) => item.id === trackId)
+  if (!track || track.locked) return
+  const wanted = asset.kind === 'audio' ? 'audio' : asset.kind === 'image' ? 'overlay' : 'video'
+  if (track.kind !== wanted) {
+    editor.notify(`Asset ${asset.kind} tidak cocok untuk track ${track.name}.`, 'error')
+    return
+  }
+  editor.addAsset(asset, time, track.id)
+}
+
+// Dropping above the top video lane means "new layer on top".
+function dropOnNewVideoLayer(asset: Asset, time: number, event: PointerEvent) {
+  const content = document.querySelector('.timeline-content') as HTMLElement | null
+  if (!content) return
+  const rect = content.getBoundingClientRect()
+  if (event.clientX < rect.left || event.clientX > rect.right) return
+  const videoLane = [...document.querySelectorAll('.lane')].find(
+    (item) => {
+      const track = editor.project?.timeline.tracks.find((t) => t.id === (item as HTMLElement).dataset.trackId)
+      return track?.kind === 'video'
+    },
+  ) as HTMLElement | undefined
+  if (!videoLane) return
+  const laneRect = videoLane.getBoundingClientRect()
+  if (event.clientY < rect.top || event.clientY > laneRect.top) return
+  editor.addAssetOnNewTrack(asset, time)
+}
+
+function cancelAssetDrag() {
+  press = null
+  dragGhost.value = null
+  document.body.classList.remove('asset-dragging')
+  window.removeEventListener('pointermove', onAssetPointerMove)
+  window.removeEventListener('pointerup', onAssetPointerUp)
+  window.removeEventListener('pointercancel', cancelAssetDrag)
 }
 
 function assetIcon(kind: Asset['kind']) {
@@ -104,7 +201,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
         <Upload :size="18" />
         <div>
           <strong>Impor media</strong>
-          <span>Video, audio, gambar</span>
+          <span>Klik atau tarik file ke panel ini</span>
         </div>
       </button>
 
@@ -123,9 +220,8 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
           v-for="asset in editor.assets"
           :key="asset.id"
           class="asset-card"
-          draggable="true"
           :title="`${asset.filename} — seret ke timeline atau klik dua kali`"
-          @dragstart="onAssetDragStart($event, asset)"
+          @pointerdown="onAssetPointerDown($event, asset)"
           @dblclick="editor.addAsset(asset)"
         >
           <div class="asset-thumb" :class="asset.kind">
@@ -133,6 +229,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
               v-if="asset.kind !== 'audio' && !brokenThumbs[asset.id]"
               :src="thumbSource(asset)"
               loading="lazy"
+              draggable="false"
               @error="brokenThumbs[asset.id] = true"
             />
             <div v-else class="asset-icon">
@@ -206,6 +303,17 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
         Tambah cepat di playhead
       </button>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="dragGhost"
+        class="asset-drag-ghost"
+        :style="{ left: `${dragGhost.x + 14}px`, top: `${dragGhost.y + 12}px` }"
+      >
+        <component :is="assetIcon(dragGhost.asset.kind)" :size="14" />
+        <span>{{ dragGhost.asset.filename }}</span>
+      </div>
+    </Teleport>
   </aside>
 </template>
 
@@ -230,7 +338,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
 .tabs {
   display: flex;
   gap: 2px;
-  background: #0b0b10;
+  background: #0d0d0d;
   padding: 3px;
   border-radius: 8px;
   border: 1px solid var(--border-soft);
@@ -261,9 +369,9 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
 }
 
 .panel-body.dragging {
-  outline: 2px dashed var(--accent);
+  outline: 2px dashed #6b6b6b;
   outline-offset: -6px;
-  background: rgba(124, 108, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .import-strip {
@@ -273,17 +381,17 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   margin-bottom: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  font-size: 11.5px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .mini-spinner {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid rgba(124, 108, 255, 0.3);
-  border-top-color: var(--accent);
+  border: 2px solid #3a3a3a;
+  border-top-color: var(--text);
   animation: spin 0.7s linear infinite;
 }
 
@@ -300,18 +408,18 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   gap: 11px;
   padding: 11px 12px;
   margin-bottom: 13px;
-  border-radius: 10px;
-  border: 1px dashed #333342;
-  background: #0c0c11;
+  border-radius: 8px;
+  border: 1px dashed #3a3a3a;
+  background: #0d0d0d;
   color: var(--muted);
   text-align: left;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .import-zone:hover {
-  border-color: var(--accent);
+  border-color: #6b6b6b;
   color: var(--text);
-  background: rgba(124, 108, 255, 0.06);
+  background: var(--panel-2);
 }
 
 .import-zone strong {
@@ -322,7 +430,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
 }
 
 .import-zone span {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted-2);
 }
 
@@ -341,16 +449,41 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
 
 .asset-card {
   cursor: grab;
-  border-radius: 9px;
-  background: #0c0c11;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: #0d0d0d;
   border: 1px solid var(--border-soft);
   overflow: hidden;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease;
+}
+
+.asset-drag-ghost {
+  position: fixed;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 280px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: #0d0d0d;
+  color: var(--text);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+}
+
+:global(body.asset-dragging) {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .asset-card:hover {
-  border-color: rgba(124, 108, 255, 0.45);
-  transform: translateY(-1px);
+  border-color: #4a4a4a;
 }
 
 .asset-card:active {
@@ -363,19 +496,15 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #191924, #101016);
+  background: var(--panel-2);
   color: var(--muted);
   overflow: hidden;
 }
 
-.asset-thumb.audio {
-  background: linear-gradient(135deg, rgba(35, 213, 180, 0.16), #101016);
-  color: var(--teal);
-}
-
+.asset-thumb.audio,
 .asset-thumb.image {
-  background: linear-gradient(135deg, rgba(242, 178, 92, 0.14), #101016);
-  color: var(--amber);
+  background: var(--panel-2);
+  color: var(--muted);
 }
 
 .asset-thumb img {
@@ -391,9 +520,9 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   bottom: 5px;
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 9.5px;
-  background: rgba(0, 0, 0, 0.65);
-  color: #e7e7f0;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.72);
+  color: var(--text);
 }
 
 .asset-actions {
@@ -403,7 +532,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(4, 4, 8, 0.55);
+  background: rgba(0, 0, 0, 0.72);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -418,26 +547,27 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  border: 1px solid #4a4a4a;
+  background: var(--panel-3);
+  color: var(--text);
 }
 
 .mini-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--text);
+  border-color: var(--text);
+  color: #000;
 }
 
 .mini-btn.danger:hover {
   background: var(--danger);
   border-color: var(--danger);
+  color: var(--text);
 }
 
 .asset-name {
   padding: 6px 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -452,9 +582,9 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 12px;
-  background: rgba(8, 8, 13, 0.88);
-  color: var(--accent-strong);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  color: var(--text);
   font-weight: 600;
   pointer-events: none;
 }
@@ -480,20 +610,20 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   align-items: flex-start;
   gap: 3px;
   padding: 10px 12px;
-  border-radius: 9px;
+  border-radius: 8px;
   border: 1px solid var(--border-soft);
-  background: #0c0c11;
+  background: #0d0d0d;
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .preset:hover {
-  border-color: var(--accent);
-  background: rgba(124, 108, 255, 0.06);
+  border-color: #4a4a4a;
+  background: var(--panel-2);
 }
 
 .preset span {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-2);
 }
 

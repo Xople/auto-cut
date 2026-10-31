@@ -38,12 +38,18 @@ async function boot() {
 async function openProject(project: Project) {
   opening.value = true
   try {
-    await editor.loadProject(project)
+    // The launcher list can predate a pending autosave, so always load fresh.
+    const fresh = await api.getProject(project.id)
+    await editor.loadProject(fresh)
   } catch (err) {
     editor.notify('Gagal membuka project: ' + (err as Error).message, 'error')
   } finally {
     opening.value = false
   }
+}
+
+function onPageHide() {
+  editor.flushKeepalive()
 }
 
 async function generateCaptions() {
@@ -85,6 +91,35 @@ function onGlobalKeydown(event: KeyboardEvent) {
     editor.splitAtPlayhead()
     return
   }
+  if (mod && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    void editor.saveNow()
+    return
+  }
+  if (mod && event.key.toLowerCase() === 'c') {
+    event.preventDefault()
+    editor.copySelected()
+    return
+  }
+  if (mod && event.key.toLowerCase() === 'x') {
+    event.preventDefault()
+    editor.cutSelected()
+    return
+  }
+  if (mod && event.key.toLowerCase() === 'v') {
+    event.preventDefault()
+    editor.pasteAtPlayhead()
+    return
+  }
+  if (mod && event.key.toLowerCase() === 'a') {
+    event.preventDefault()
+    editor.selectAll()
+    return
+  }
+  if (event.key === 'Escape') {
+    editor.clearSelection()
+    return
+  }
   if (event.code === 'Space') {
     event.preventDefault()
     editor.togglePlay()
@@ -92,27 +127,34 @@ function onGlobalKeydown(event: KeyboardEvent) {
   }
   if (event.key === 'Delete' || event.key === 'Backspace') {
     event.preventDefault()
-    editor.deleteSelected()
+    if (event.shiftKey) editor.deleteSelected(true)
+    else editor.deleteSelected()
     return
   }
-  if (event.key === 'ArrowRight') {
+  const timelineFocused = Boolean(
+    (target instanceof Element && target.closest('.timeline-panel')) ||
+      document.activeElement?.closest?.('.timeline-panel'),
+  )
+  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
     event.preventDefault()
-    editor.seek(editor.playhead + 1 / (editor.project.fps || 30))
-    return
-  }
-  if (event.key === 'ArrowLeft') {
-    event.preventDefault()
-    editor.seek(editor.playhead - 1 / (editor.project.fps || 30))
+    const direction = event.key === 'ArrowRight' ? 1 : -1
+    if (timelineFocused) {
+      editor.nudgeSelected(direction * (event.shiftKey ? 1 : 1 / (editor.project.fps || 30)))
+    } else {
+      editor.seek(editor.playhead + (direction * 1) / (editor.project.fps || 30))
+    }
   }
 }
 
 onMounted(() => {
   boot()
   window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('pagehide', onPageHide)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('pagehide', onPageHide)
 })
 </script>
 
@@ -216,7 +258,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   text-align: center;
   padding: 40px;
-  background: radial-gradient(circle at 50% 35%, rgba(124, 108, 255, 0.14), transparent 55%), var(--bg);
+  background: var(--bg);
 }
 
 .boot-screen h1 {
@@ -249,26 +291,24 @@ onBeforeUnmount(() => {
 
 .boot-dot:nth-child(2) {
   animation-delay: 0.15s;
-  background: #5f8dff;
 }
 
 .boot-dot:nth-child(3) {
   animation-delay: 0.3s;
-  background: var(--teal);
 }
 
 .boot-error-mark {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   font-weight: 700;
   color: var(--amber);
-  background: rgba(242, 178, 92, 0.12);
-  border: 1px solid rgba(242, 178, 92, 0.3);
+  background: rgba(229, 169, 59, 0.1);
+  border: 1px solid rgba(229, 169, 59, 0.3);
 }
 
 .boot-error-text {
@@ -285,8 +325,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(5, 5, 9, 0.65);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.72);
   color: var(--muted);
 }
 
@@ -294,8 +333,8 @@ onBeforeUnmount(() => {
   width: 17px;
   height: 17px;
   border-radius: 50%;
-  border: 2px solid rgba(124, 108, 255, 0.3);
-  border-top-color: var(--accent);
+  border: 2px solid var(--panel-3);
+  border-top-color: var(--text);
   animation: spin 0.7s linear infinite;
 }
 

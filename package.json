@@ -1,7 +1,7 @@
 {
   "name": "autocut-workstation",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "AutoCut Workstation desktop shell (Tauri + Go sidecar + Vue 3)",
   "scripts": {
     "dev": "npm run build:sidecar && tauri dev",

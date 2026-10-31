@@ -1,0 +1,1486 @@
+{
+ "url": "http://localhost:5181",
+ "at": "2026-10-29T16:07:16.100Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.67
+   ],
+   "motion": {
+    "elements": 20,
+    "css": 20,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 259,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 63,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 1,
+     "size": 21,
+     "vw": 1.5,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 35,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "lines": 1,
+     "size": 21,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      13,
+      21
+     ],
+     "sizeCount": 3,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 21,
+      "vw": 1.5,
+      "font": "Inter",
+      "text": "AutoCut Workstation"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.05,
+     "smallText": 3
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#000000",
+     "bodyBgHsl": {
+      "h": 0,
+      "s": 0,
+      "l": 0
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#000000",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 0
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#949494",
+       "share": 0.54
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.22
+      },
+      {
+       "color": "#e6e6e6",
+       "share": 0.16
+      },
+      {
+       "color": "#b4b4b4",
+       "share": 0.07
+      },
+      {
+       "color": "#000000",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#000000"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 1,
+     "inHero": 1,
+     "radius": 8,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Project Baru"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 21,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 21,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 21,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 104
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": [
+     "inter"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": 144,
+     "right": 233
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "AutoCut Workstation",
+      "size": 21,
+      "top": 35,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 188,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.11,
+    "voidBox": {
+     "x": 1260,
+     "y": 120,
+     "w": 180,
+     "h": 780
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": true,
+    "ground": "#000000",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 144,
+     "right": 153
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 1,
+     "size": 21,
+     "vw": 1.5,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 35,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 21,
+     "firstScreen": 16,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 1,
+    "panels": {
+     "count": 41,
+     "radii": [
+      [
+       10,
+       21
+      ],
+      [
+       0,
+       20
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.69,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      13,
+      21
+     ]
+    },
+    "title": {
+     "text": "AutoCut Workstation",
+     "size": 21,
+     "top": 35
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.58
+   ],
+   "motion": {
+    "elements": 20,
+    "css": 20,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1024,
+     "screens": 1,
+     "words": 259,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 63,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 1,
+     "size": 21,
+     "vw": 2.7,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 35,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "lines": 1,
+     "size": 21,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      13,
+      21
+     ],
+     "sizeCount": 3,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 21,
+      "vw": 2.7,
+      "font": "Inter",
+      "text": "AutoCut Workstation"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.05,
+     "smallText": 3
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#000000",
+     "bodyBgHsl": {
+      "h": 0,
+      "s": 0,
+      "l": 0
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#000000",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 0
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#949494",
+       "share": 0.54
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.22
+      },
+      {
+       "color": "#e6e6e6",
+       "share": 0.16
+      },
+      {
+       "color": "#b4b4b4",
+       "share": 0.07
+      },
+      {
+       "color": "#000000",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#000000"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 1,
+     "inHero": 1,
+     "radius": 8,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Project Baru"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 21,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 21,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 21,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 104
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": [
+     "inter"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1024,
+    "margins": {
+     "left": 54,
+     "right": 54
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "AutoCut Workstation",
+      "size": 21,
+      "top": 35,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 98,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": true,
+    "ground": "#000000",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 54,
+     "right": 63
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 1,
+     "size": 21,
+     "vw": 2.7,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 35,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 21,
+     "firstScreen": 10,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 1,
+    "panels": {
+     "count": 41,
+     "radii": [
+      [
+       10,
+       21
+      ],
+      [
+       0,
+       20
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.69,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      13,
+      21
+     ]
+    },
+    "title": {
+     "text": "AutoCut Workstation",
+     "size": 21,
+     "top": 35
+    },
+    "colourShare": 0.001
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.68
+   ],
+   "motion": {
+    "elements": 20,
+    "css": 20,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 844,
+     "screens": 1,
+     "words": 259,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 63,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 2,
+     "size": 21,
+     "vw": 5.4,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 34,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "lines": 2,
+     "size": 21,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      13,
+      21
+     ],
+     "sizeCount": 3,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 21,
+      "vw": 5.4,
+      "font": "Inter",
+      "text": "AutoCut Workstation"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.05,
+     "smallText": 3
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#000000",
+     "bodyBgHsl": {
+      "h": 0,
+      "s": 0,
+      "l": 0
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#000000",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 0
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#949494",
+       "share": 0.54
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.22
+      },
+      {
+       "color": "#e6e6e6",
+       "share": 0.16
+      },
+      {
+       "color": "#b4b4b4",
+       "share": 0.07
+      },
+      {
+       "color": "#000000",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#000000"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 1,
+     "inHero": 1,
+     "radius": 8,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Project Baru"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 21,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 21,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 21,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 158
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": [
+     "inter"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 844,
+    "margins": {
+     "left": 40,
+     "right": 25
+    },
+    "sections": [
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 158,
+      "height": 191,
+      "words": 10,
+      "media": 0,
+      "middle": 13,
+      "heading": {
+       "text": "M2 UI Link",
+       "size": 13,
+       "tag": "h3"
+      },
+      "left": 54,
+      "right": 175,
+      "textLeft": 54,
+      "textRight": 175,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 365,
+      "height": 191,
+      "words": 10,
+      "media": 0,
+      "middle": 13,
+      "heading": {
+       "text": "M2 UI Group",
+       "size": 13,
+       "tag": "h3"
+      },
+      "left": 54,
+      "right": 170,
+      "textLeft": 54,
+      "textRight": 170,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 572,
+      "height": 191,
+      "words": 10,
+      "media": 0,
+      "middle": 13,
+      "heading": {
+       "text": "M2 UI Link",
+       "size": 13,
+       "tag": "h3"
+      },
+      "left": 54,
+      "right": 175,
+      "textLeft": 54,
+      "textRight": 175,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 779,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 986,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 1193,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 1400,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 1607,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 1814,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 2021,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 2228,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 2435,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 2642,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 2849,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 3056,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 3263,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 3470,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 3677,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 3884,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "article.project-card",
+      "tag": "article",
+      "top": 4091,
+      "height": 191,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "button.new-card",
+      "tag": "button",
+      "top": 4298,
+      "height": 186,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 40,
+      "right": 40,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "AutoCut Workstation",
+      "size": 21,
+      "top": 34,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 74,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": true,
+    "ground": "#000000",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 54,
+     "right": 63
+    },
+    "hero": {
+     "text": "AutoCut Workstation",
+     "words": 2,
+     "chars": 19,
+     "lines": 2,
+     "size": 21,
+     "vw": 5.4,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": -0.02,
+     "leading": 1.2,
+     "top": 34,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 21,
+     "firstScreen": 4,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 41,
+     "radii": [
+      [
+       10,
+       21
+      ],
+      [
+       0,
+       20
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.69,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      13,
+      21
+     ]
+    },
+    "title": {
+     "text": "AutoCut Workstation",
+     "size": 21,
+     "top": 34
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "tiny-text",
+   "width": 1440,
+   "message": "69% of the text is under 13px.",
+   "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\desktop-fold.jpg",
+   "pages": [
+    "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\tablet-fold.jpg",
+   "pages": [
+    "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\mobile-fold.jpg",
+   "pages": [
+    "D:\\Dev\\.Projects\\AutoCut\\.taste-skill\\after-production\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

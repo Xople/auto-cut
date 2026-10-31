@@ -397,8 +397,8 @@ const sourceHint = computed(() => {
 }
 
 .cut-row.active {
-  background: rgba(255, 93, 108, 0.06);
-  border-color: rgba(255, 93, 108, 0.18);
+  background: var(--panel-3);
+  border-color: #4a4a4a;
   color: var(--text);
 }
 
@@ -410,7 +410,7 @@ const sourceHint = computed(() => {
 .cut-dur {
   font-variant-numeric: tabular-nums;
   color: var(--danger);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .cut-text {
@@ -423,7 +423,7 @@ const sourceHint = computed(() => {
 .btn-mini {
   height: 22px;
   padding: 0 8px;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .footer-hint {

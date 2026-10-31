@@ -1,6 +1,20 @@
 export type TrackKind = 'video' | 'audio' | 'overlay' | 'caption'
 export type AssetKind = 'video' | 'audio' | 'image'
 export type CutReason = 'silence' | 'filler' | 'retake' | 'off_topic' | 'keep'
+export type TransitionType = 'pull_in' | 'slide_right' | 'slide_left'
+
+export interface Transition {
+  type: TransitionType
+  duration: number
+}
+
+export const TRANSITIONS: Array<{ value: TransitionType; label: string; hint: string }> = [
+  { value: 'pull_in', label: 'Pull In', hint: 'Zoom masuk dari layar penuh' },
+  { value: 'slide_right', label: 'Right', hint: 'Masuk bergeser dari kanan' },
+  { value: 'slide_left', label: 'Left', hint: 'Masuk bergeser dari kiri' },
+]
+
+export const DEFAULT_TRANSITION_DURATION = 0.6
 
 export interface WordTiming {
   word: string
@@ -26,6 +40,14 @@ export interface TextStyle {
   background_alpha: number
 }
 
+export interface TransformKeyframe {
+  time: number
+  x: number
+  y: number
+  scale: number
+  rotation: number
+}
+
 export interface Clip {
   id: string
   asset_id?: string
@@ -44,7 +66,11 @@ export interface Clip {
   volume: number
   fade_in: number
   fade_out: number
+  speed: number
+  linked_id?: string
   words?: WordTiming[]
+  transition?: Transition | null
+  keyframes?: TransformKeyframe[]
 }
 
 export interface Track {
@@ -53,6 +79,8 @@ export interface Track {
   name: string
   muted: boolean
   locked: boolean
+  hidden: boolean
+  height: number
   clips: Clip[]
 }
 
@@ -135,10 +163,12 @@ export interface Asset {
 }
 
 export interface Font {
+  id: string
   family: string
   subfamily: string
   full_name: string
   path: string
+  source: 'bundled' | 'system'
 }
 
 export interface Transcript {
@@ -246,6 +276,7 @@ export function defaultClip(partial: Partial<Clip> = {}): Clip {
     volume: 1,
     fade_in: 0,
     fade_out: 0,
+    speed: 1,
     ...partial,
   }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { Clapperboard, Download, FolderOpen, X } from 'lucide-vue-next'
+import { Check, Clapperboard, Download, FolderOpen, X } from 'lucide-vue-next'
 import { api, exportDownloadUrl, revealExport, subscribeTask } from '../api'
 import { useEditor } from '../stores/editor'
 import { formatBytes, formatSecondsShort } from '../lib/format'
@@ -253,7 +253,7 @@ async function revealOutput() {
           <div v-if="error" class="error-text">{{ error }}</div>
 
           <div v-if="job && job.status === 'completed'" class="done-box">
-            <div class="done-mark">✓</div>
+            <div class="done-mark"><Check :size="15" /></div>
             <div class="done-body">
               <strong>{{ job.output_name }}</strong>
               <span class="hint">Render selesai dalam {{ formatSecondsShort(editor.duration) }} timeline.</span>
@@ -361,9 +361,9 @@ async function revealOutput() {
   gap: 11px;
   padding: 11px 13px;
   margin: 4px 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(90, 216, 138, 0.25);
-  background: rgba(90, 216, 138, 0.07);
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--panel-2);
 }
 
 .done-mark {
@@ -373,7 +373,7 @@ async function revealOutput() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(90, 216, 138, 0.16);
+  background: var(--panel-3);
   color: var(--green);
   font-weight: 700;
 }

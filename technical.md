@@ -118,7 +118,7 @@ Tabel legacy `jobs`, `transcripts`, `cutlists`, `metadata` masih ada untuk API `
 
 ```jsonc
 {
-  "version": 1,
+  "version": 2,
   "width": 1920,
   "height": 1080,
   "fps": 30,
@@ -131,20 +131,24 @@ Tabel legacy `jobs`, `transcripts`, `cutlists`, `metadata` masih ada untuk API `
     "highlight": true, "words_per_chunk": 3
   },
   "tracks": [
-    { "id": "video-main", "kind": "video", "clips": [] },
-    { "id": "overlay", "kind": "overlay", "clips": [] },
-    { "id": "audio-main", "kind": "audio", "clips": [] },
-    { "id": "caption", "kind": "caption", "clips": [] }
+    { "id": "video-main", "kind": "video", "height": 52, "hidden": false, "clips": [] },
+    { "id": "overlay", "kind": "overlay", "height": 52, "hidden": false, "clips": [] },
+    { "id": "audio-main", "kind": "audio", "height": 52, "hidden": false, "clips": [] },
+    { "id": "caption", "kind": "caption", "height": 52, "hidden": false, "clips": [] }
   ]
 }
 ```
 
-Track punya `muted` dan `locked`. Clip:
+Urutan array `tracks` adalah urutan vertikal di UI (index 0 paling atas). Dokumen v1 yang dibuka otomatis dinormalisasi ke v2: `height` diisi 52, `hidden` false, `speed` clip 1, dan `out` yang tidak valid diperbaiki dari `in + duration`. `PUT /timeline` menormalkan lalu memvalidasi (id unik, jenis track dikenal, waktu non-negatif, `speed > 0`, batas 64 track / 5000 clip); pelanggaran mengembalikan 400.
+
+Track punya `muted`, `locked`, `hidden`, dan `height` (28–160 px). Clip:
 
 | Field | Arti |
 |---|---|
 | `start`, `duration` | Posisi/panjang di timeline (detik). |
 | `in`, `out` | Rentang sumber pada asset (detik). |
+| `speed` | Pengali kecepatan playback (default 1). |
+| `linked_id` | ID clip pasangan di track lain (mis. video ↔ audio). |
 | `x`, `y` | Pusat overlay ternormalisasi (0..1). |
 | `scale`, `rotation`, `opacity` | Transform overlay. |
 | `blend_mode` | normal, multiply, screen, overlay, softlight, hardlight, addition, difference, darken, lighten, dodge, burn. |
@@ -175,7 +179,8 @@ Semua request/response JSON kecuali upload multipart dan file streaming. Saat `A
 | Method & Path | Fungsi |
 |---|---|
 | `GET /api/health` | Status engine, ffmpeg, whisper, `token_required`. Bebas token. |
-| `GET /api/fonts` | Daftar font sistem `{ family, subfamily, full_name, path }`. |
+| `GET /api/fonts` | Daftar font `{ id, family, subfamily, full_name, path, source }`; `source` = `bundled` (Google Fonts OFL) atau `system`. |
+| `GET /api/fonts/{id}/file` | File TTF font bundled untuk `@font-face` di UI. |
 | `GET /api/projects` | List project (100 terbaru). |
 | `POST /api/projects` | Buat project `{ name, width, height, fps }`. |
 | `GET /api/projects/{id}` | Detail project + timeline. |
@@ -262,7 +267,7 @@ Handler `captions` menghapus isi track caption (default `replace=true`) lalu men
 - Satu event per chunk; highlight per kata memakai event tambahan dengan warna `highlight_color`.
 - Font size diskalakan `height/1080`; posisi `\pos(width/2, position_y*height)`.
 - Stroke memakai `Outline`, shadow memakai `Shadow`, warna ASS BGR.
-- Burn dengan `ass=filename=...:fontsdir=C:\Windows\Fonts`.
+- Burn dengan `ass=filename=...:fontsdir=<cache>/fonts`, berisi font bundled + face sistem yang dipakai (fallback ke `C:\Windows\Fonts`).
 
 **Keterbatasan:** ASS tidak mendukung blend mode. `caption_style.blend_mode` hanya dipakai preview CSS. UI menampilkan peringatan.
 
@@ -278,10 +283,12 @@ Handler `captions` menghapus isi track caption (default `replace=true`) lalu men
    - Gambar: `scale` sesuai fit, `rotate`, `colorchannelmixer=aa`, komposisi di atas **canvas transparan**.
    - Penting: sumber `color=c=black@0` harus diikuti `format=rgba` agar alpha benar-benar transparan; tanpa ini PNG menjadi opaque hitam dan menutupi video.
 3. Build graph:
-   - **Video base:** trim per clip → `setpts`, `fps`, `scale` + `pad`, segmen hitam untuk gap, `concat`.
+   - **Video base:** track video paling bawah yang terlihat; trim per clip → `setpts`, `fps`, `scale` + `pad`, segmen hitam untuk gap, `concat`.
+   - **Video lapisan atas:** track video di atas base (urut bawah→atas). Tiap clip di-`trim`, di-`fps`, di-scale + `pad` transparan (`color=black@0`), lalu `setpts=PTS+start/TB` dan `overlay` dengan `enable='between(t,start,end)'`; blend non-normal memakai `split` → `blend` → `alphaextract` → `maskedmerge`. Di luar rentang clip, base tetap terlihat.
    - **Audio:** trim, volume, fade in/out, `adelay` per clip, `amix`, `apad`/`atrim` ke durasi total.
-   - **Overlay:** tiap PNG di-loop, `overlay` untuk normal; untuk blend: `split` → `blend=all_mode=...` → `alphaextract` → `maskedmerge` dengan `enable='between(t,start,end)'`.
+   - **Overlay:** diproses di pass kedua, setelah semua track video, sehingga selalu berada di atas video apa pun urutan track-nya. Tiap PNG di-loop, `overlay` untuk normal; untuk blend: `split` → `blend=all_mode=...` → `alphaextract` → `maskedmerge` dengan `enable='between(t,start,end)'`.
    - **Caption:** `ass` filter, opsional `scale` ke resolusi output.
+   - Track `hidden` dilewati di seluruh jalur visual; track audio `muted`/`hidden` dilewati di audio.
 4. Input dideduplikasi per asset; bila asset dipakai beberapa kali, `split`/`asplit` dipakai.
 5. Tulis graph ke `cache/filter_graph.txt`, jalankan ffmpeg dengan `-filter_complex_script`, `-progress pipe:1`.
 6. Parse `out_time` untuk progress (14%–99%), lalu `report(1)`.
@@ -308,17 +315,23 @@ Export hanya membaca clip pada track **Audio** yang tidak muted. Audio tertanam 
 - `web/src/stores/editor.ts` — Pinia setup store:
   - project, assets, fonts, selection, playhead, playing, zoom, analysis, toast.
   - history: snapshot JSON (maks 100), coalescing edit dengan key yang sama < 900 ms.
-  - autosave: debounce 650 ms → `PUT /timeline`.
+  - autosave: debounce 650 ms → `PUT /timeline`, ditulis serial agar tidak ada save lama menimpa save baru.
+  - flush paksa saat drag selesai, `Ctrl+S`, tutup project (menunggu write selesai), dan `pagehide` (keepalive fetch).
+  - membuka project selalu mengambil `GET /projects/{id}` terbaru, bukan snapshot dari daftar project, agar timeline yang baru disimpan tidak tertimpa data lama.
   - playback: `requestAnimationFrame`, berhenti di durasi timeline.
-  - editing: update clip, delete, split, add text/asset, track mute/lock, caption style.
+  - editing: update clip, batch delete (opsional ripple), split/blade, add text/asset, track mute/lock/hidden/height, tambah/hapus/urut track, pindah clip antar track.
+  - seleksi: anchor `selection` + daftar `selectionIds`; Shift+klik menambah, marquee di lane kosong memilih berdasarkan irisan waktu dan baris; drag, trim, hapus, nudge, dan copy berlaku ke seluruh clip terpilih.
+  - clipboard & penempatan: `Ctrl+C/X/V/A`; paste memetakan ulang `id`/`linked_id`, mode insert menggeser clip terdampak, mode overwrite memotong clip yang tumpang tindih; nudge (`←/→` 1 frame, Shift 1 detik) hanya saat panel timeline fokus.
+  - linked clip: video dan audio dari asset yang sama berbagi `linked_id`; drag, trim, pindah track, nudge, hapus, dan split ikut memproses pasangan kecuali Alt ditekan. Split pasangan di tengah mempertahankan link kiri dan menautkan ulang bagian kanan.
 - Komponen: `TopBar`, `ProjectLauncher`, `MediaPanel`, `PreviewStage`, `OverlayPreview`, `CaptionPreview`, `TimelinePanel`, `PropertiesPanel`, `AutoCutDialog`, `ExportDialog`, `ToastHost`.
-- `TimelinePanel` menghitung posisi pixel dari `start * pxPerSecond`, snapping ke playhead/tepi clip/0, drag move/trim memakai pointer events; wheel horizontal scroll; zoom 0.2–4×.
+- `TimelinePanel` menghitung posisi pixel dari `start * pxPerSecond`, snapping ke playhead/tepi clip/0 dengan garis panduan sementara (`.snap-guide`), drag move/trim/grup memakai pointer events; wheel horizontal scroll; zoom 0.2–4×. Header track punya tombol mata (hidden), menu (kunci, naik/turun, hapus), dan strip bawah untuk resize tinggi (28–160 px). Drag vertikal clip memakai `elementFromPoint` untuk mencari lane tujuan; hanya track sejenis dan tidak terkunci yang menerima, lalu `moveClipToTrack` menyimpan urutan clip. Toolbar menyediakan split, blade, ripple, paste, snapping, mode overwrite/insert, serta context menu klik kanan pada clip/lane. Drag antar track hanya berlaku untuk satu clip terpilih. Playhead (garis + kepala ruler) dipisah ke komponen `PlayheadMarker` yang membaca store sendiri, sehingga panel timeline tidak di-render ulang tiap frame playback.
 
 ### 9.2 Preview
 
-- Satu elemen `<video>` aktif (muted) + elemen `<audio>` per clip audio aktif.
-- Sinkronisasi: jika selisih `currentTime` > 0.28 s → seek; play/pause mengikuti store.
-- Overlay DOM memakai posisi persen, transform, opacity, dan `mix-blend-mode` (pemetaan blend ffmpeg → CSS).
+- Satu elemen `<video>` per track video yang terlihat dan punya clip aktif, ditumpuk sesuai urutan track (DOM order = z-order) dengan `opacity` dan `mix-blend-mode` per clip; elemen `<audio>` per clip audio aktif.
+- Overlay teks/gambar dirender satu lapisan setelah semua video, jadi selalu di atas video; caption dirender setelah overlay (paling atas). Daftar overlay dimemo agar komponen overlay tidak ikut render ulang tiap frame playback.
+- Sinkronisasi media: seek `currentTime` hanya saat selisih > 0.45 s atau saat play/seek bar; selisih kecil dikoreksi lewat `playbackRate` (0.92–1.08) agar tidak ada seek berulang per frame yang membuat WebView2 tersendat.
+- Overlay DOM memakai posisi persen, transform, opacity, dan `mix-blend-mode` (pemetaan blend ffmpeg → CSS). Track `hidden` tidak membuat layer preview.
 - Caption DOM: ukuran font diskalakan dari tinggi stage, stroke via `-webkit-text-stroke`, highlight kata aktif, blend hanya visual.
 
 ### 9.3 Alur dialog

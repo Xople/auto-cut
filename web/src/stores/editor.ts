@@ -1,7 +1,20 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../api'
+import { applyBundledFonts } from '../lib/fonts'
 import {
+  clampTransform,
+  hasTransformAnimation,
+  keyframeAt,
+  MAX_CLIP_SCALE,
+  MIN_CLIP_SCALE,
+  removeTransformKeyframe,
+  transformAt,
+  upsertTransformKeyframe,
+  type TransformValue,
+} from '../lib/transform'
+import {
+  DEFAULT_TRANSITION_DURATION,
   defaultClip,
   defaultTextStyle,
   type AnalysisResult,
@@ -10,8 +23,10 @@ import {
   type Clip,
   type Font,
   type Project,
+  type Timeline,
   type Track,
   type TrackKind,
+  type TransitionType,
 } from '../types'
 
 export interface Selection {
@@ -19,12 +34,18 @@ export interface Selection {
   clipId: string
 }
 
+export type EditMode = 'overwrite' | 'insert'
+
 export const useEditor = defineStore('editor', () => {
   const project = ref<Project | null>(null)
   const assets = ref<Asset[]>([])
   const fonts = ref<Font[]>([])
   const fontsLoaded = ref(false)
   const selection = ref<Selection | null>(null)
+  const selectionIds = ref<string[]>([])
+  const rippleDelete = ref(false)
+  const editMode = ref<EditMode>('overwrite')
+  const clipboard = ref<Array<{ trackId: string; clip: Clip }>>([])
   const playhead = ref(0)
   const playing = ref(false)
   const zoom = ref(1)
@@ -57,6 +78,18 @@ export const useEditor = defineStore('editor', () => {
 
   const selectedClip = computed(() => selected.value?.clip ?? null)
   const selectedTrack = computed(() => selected.value?.track ?? null)
+  const selectedEntries = computed(() => {
+    const tl = project.value?.timeline
+    if (!tl || selectionIds.value.length === 0) return []
+    const wanted = new Set(selectionIds.value)
+    const list: Array<{ track: Track; clip: Clip }> = []
+    for (const track of tl.tracks) {
+      for (const clip of track.clips) if (wanted.has(clip.id)) list.push({ track, clip })
+    }
+    return list
+  })
+  const selectionCount = computed(() => selectedEntries.value.length)
+  const canPaste = computed(() => clipboard.value.length > 0)
   const canUndo = computed(() => undoStack.value.length > 0)
   const canRedo = computed(() => redoStack.value.length > 0)
 
@@ -104,6 +137,98 @@ export const useEditor = defineStore('editor', () => {
     return project.value?.timeline.tracks.find((t) => t.kind === kind) ?? null
   }
 
+  function locateClip(clipId: string): { track: Track; clip: Clip } | null {
+    const tl = project.value?.timeline
+    if (!tl) return null
+    for (const track of tl.tracks) {
+      const clip = track.clips.find((c) => c.id === clipId)
+      if (clip) return { track, clip }
+    }
+    return null
+  }
+
+  function linkedPartner(clip: Clip): { track: Track; clip: Clip } | null {
+    return clip.linked_id ? locateClip(clip.linked_id) : null
+  }
+
+  // Clip overlaps are illegal on one track, but two tracks may stack freely.
+  function findCollision(track: Track, start: number, duration: number, excludeIds = new Set<string>()): Clip | null {
+    const end = start + duration
+    for (const other of track.clips) {
+      if (excludeIds.has(other.id)) continue
+      if (other.start < end - 1e-4 && other.start + other.duration > start + 1e-4) return other
+    }
+    return null
+  }
+
+  // Older projects stored a video's audio as a separate clip on the audio track.
+  // Some were linked, some were not, so detect both forms: move the audio
+  // settings onto the video clip and drop the duplicate to avoid doubled sound.
+  const AUDIO_TWIN_TOLERANCE = 0.06
+
+  function sameTiming(a: Clip, b: Clip): boolean {
+    return (
+      Math.abs(a.start - b.start) <= AUDIO_TWIN_TOLERANCE &&
+      Math.abs(a.duration - b.duration) <= AUDIO_TWIN_TOLERANCE &&
+      Math.abs(a.in - b.in) <= AUDIO_TWIN_TOLERANCE
+    )
+  }
+
+  function absorbAudioSettings(video: Clip, audio: Clip) {
+    if (video.volume === 1) video.volume = audio.volume
+    if (video.fade_in === 0) video.fade_in = audio.fade_in
+    if (video.fade_out === 0) video.fade_out = audio.fade_out
+    if (video.linked_id === audio.id) video.linked_id = undefined
+  }
+
+  function migrateLinkedAudio(timeline: Timeline): boolean {
+    const located = new Map<string, { track: Track; clip: Clip }>()
+    const videosByAsset = new Map<string, Clip[]>()
+    for (const track of timeline.tracks) {
+      for (const clip of track.clips) {
+        located.set(clip.id, { track, clip })
+        if (track.kind === 'video' && clip.asset_id) {
+          const list = videosByAsset.get(clip.asset_id) ?? []
+          list.push(clip)
+          videosByAsset.set(clip.asset_id, list)
+        }
+      }
+    }
+    let changed = false
+    for (const track of timeline.tracks) {
+      if (track.kind !== 'audio' || track.clips.length === 0) continue
+      const kept: Clip[] = []
+      for (const clip of track.clips) {
+        const linked = clip.linked_id ? located.get(clip.linked_id) : undefined
+        if (linked && linked.track.kind === 'video') {
+          absorbAudioSettings(linked.clip, clip)
+          changed = true
+          continue
+        }
+        const twin = clip.asset_id
+          ? videosByAsset.get(clip.asset_id)?.find((video) => sameTiming(video, clip))
+          : undefined
+        if (twin) {
+          absorbAudioSettings(twin, clip)
+          changed = true
+          continue
+        }
+        kept.push(clip)
+      }
+      if (kept.length !== track.clips.length) track.clips = kept
+    }
+    return changed
+  }
+
+  function pruneSelection() {
+    const ids = selectionIds.value.filter((id) => locateClip(id))
+    selectionIds.value = ids
+    if (!selection.value || !ids.includes(selection.value.clipId)) {
+      const first = ids[0] ? locateClip(ids[0]) : null
+      selection.value = first ? { trackId: first.track.id, clipId: first.clip.id } : null
+    }
+  }
+
   // ---- history -------------------------------------------------------
   let lastHistoryKey = ''
   let lastHistoryAt = 0
@@ -126,11 +251,7 @@ export const useEditor = defineStore('editor', () => {
     if (!project.value) return
     project.value.timeline = JSON.parse(snapshot)
     clampPlayhead()
-    if (selection.value) {
-      const sel = selection.value
-      const track = project.value.timeline.tracks.find((t) => t.id === sel.trackId)
-      if (!track || !track.clips.some((c) => c.id === sel.clipId)) selection.value = null
-    }
+    pruneSelection()
     scheduleSave()
   }
 
@@ -155,32 +276,83 @@ export const useEditor = defineStore('editor', () => {
 
   // ---- persistence ---------------------------------------------------
   let saveTimer = 0
+  let saveChain: Promise<void> = Promise.resolve()
+  let dirty = false
+  let saveRetries = 0
+
   function scheduleSave() {
-    const p = project.value
-    if (!p) return
+    if (!project.value) return
+    dirty = true
     saveState.value = 'saving'
     window.clearTimeout(saveTimer)
-    saveTimer = window.setTimeout(async () => {
-      const id = p.id
-      const snapshot = JSON.stringify(p.timeline)
-      try {
-        const updated = await api.saveTimeline(id, JSON.parse(snapshot))
-        if (project.value?.id === id) {
-          project.value.updated_at = updated.updated_at
-          saveState.value = 'saved'
-        }
-      } catch (err) {
-        saveState.value = 'error'
-        console.error(err)
-        notify('Gagal menyimpan timeline: ' + (err as Error).message, 'error')
-      }
+    saveTimer = window.setTimeout(() => {
+      void flushSave()
     }, 650)
   }
 
+  // Serializes writes so a debounced save can never land after a newer one.
+  function flushSave(): Promise<void> {
+    window.clearTimeout(saveTimer)
+    saveTimer = 0
+    const p = project.value
+    if (!p || !dirty) return saveChain
+    const snapshot = JSON.stringify(p.timeline)
+    dirty = false
+    saveState.value = 'saving'
+    saveChain = saveChain
+      .catch(() => {})
+      .then(async () => {
+        try {
+          const updated = await api.saveTimeline(p.id, JSON.parse(snapshot))
+          saveRetries = 0
+          if (project.value?.id !== p.id) return
+          project.value.updated_at = updated.updated_at
+          if (!dirty) saveState.value = 'saved'
+        } catch (err) {
+          dirty = true
+          saveState.value = 'error'
+          console.error(err)
+          if (saveRetries === 0) notify('Gagal menyimpan timeline: ' + (err as Error).message, 'error')
+          // Backend can be busy (import/export); retry a few times before giving up.
+          if (saveRetries < 3) {
+            saveRetries += 1
+            window.setTimeout(() => {
+              if (project.value?.id === p.id) void flushSave()
+            }, 1500 * saveRetries)
+          }
+        }
+      })
+    return saveChain
+  }
+
+  async function saveNow() {
+    await flushSave()
+    if (saveState.value === 'saved') notify('Timeline disimpan.', 'success')
+  }
+
+  // Best-effort write when the window is closing; the sidecar may go away first.
+  function flushKeepalive() {
+    const p = project.value
+    if (!p || !dirty) return
+    dirty = false
+    try {
+      api.saveTimelineKeepalive(p.id, JSON.parse(JSON.stringify(p.timeline)))
+    } catch {
+      dirty = true
+    }
+  }
+
   async function loadProject(p: Project) {
+    await flushSave()
     project.value = p
+    if (migrateLinkedAudio(p.timeline)) {
+      scheduleSave()
+      notify('Audio bawaan video sekarang menyatu dengan clip videonya.', 'info')
+    }
     assets.value = await api.listAssets(p.id)
     selection.value = null
+    selectionIds.value = []
+    clipboard.value = []
     playhead.value = 0
     playing.value = false
     undoStack.value = []
@@ -200,17 +372,19 @@ export const useEditor = defineStore('editor', () => {
     pushHistory()
     project.value.timeline = updated.timeline
     project.value.updated_at = updated.updated_at
+    pruneSelection()
     clampPlayhead()
     scheduleSave()
   }
 
   async function ensureFonts() {
     if (fontsLoaded.value) return
-    fontsLoaded.value = true
     try {
       fonts.value = await api.fonts()
+      applyBundledFonts(fonts.value)
+      fontsLoaded.value = true
     } catch {
-      fonts.value = []
+      fontsLoaded.value = false
     }
   }
 
@@ -271,12 +445,56 @@ export const useEditor = defineStore('editor', () => {
   }
 
   // ---- selection & clip editing --------------------------------------
-  function select(trackId: string, clipId: string) {
+  function select(trackId: string, clipId: string, additive = false) {
+    if (!additive) {
+      selection.value = { trackId, clipId }
+      selectionIds.value = [clipId]
+      return
+    }
+    const index = selectionIds.value.indexOf(clipId)
+    if (index >= 0) {
+      selectionIds.value.splice(index, 1)
+      if (selection.value?.clipId === clipId) {
+        const first = selectionIds.value[0] ? locateClip(selectionIds.value[0]) : null
+        selection.value = first ? { trackId: first.track.id, clipId: first.clip.id } : null
+      }
+      return
+    }
+    selectionIds.value.push(clipId)
     selection.value = { trackId, clipId }
+  }
+
+  function setSelection(entries: Selection[]) {
+    const seen = new Set<string>()
+    const valid: Selection[] = []
+    for (const entry of entries) {
+      if (seen.has(entry.clipId)) continue
+      const found = locateClip(entry.clipId)
+      if (!found) continue
+      seen.add(entry.clipId)
+      valid.push({ trackId: found.track.id, clipId: found.clip.id })
+    }
+    selectionIds.value = valid.map((v) => v.clipId)
+    selection.value = valid[0] ?? null
+  }
+
+  function isSelected(clipId: string): boolean {
+    return selectionIds.value.includes(clipId)
+  }
+
+  function selectAll() {
+    const tl = project.value?.timeline
+    if (!tl) return
+    const entries: Selection[] = []
+    for (const track of tl.tracks) {
+      for (const clip of track.clips) entries.push({ trackId: track.id, clipId: clip.id })
+    }
+    setSelection(entries)
   }
 
   function clearSelection() {
     selection.value = null
+    selectionIds.value = []
   }
 
   function updateClip(trackId: string, clipId: string, patch: Partial<Clip>, historyKey = '') {
@@ -288,21 +506,363 @@ export const useEditor = defineStore('editor', () => {
     playlistChanged()
   }
 
+  function clampTransformPatch(value: TransformValue): TransformValue {
+    return {
+      x: clampTransform(value.x, 0, 1),
+      y: clampTransform(value.y, 0, 1),
+      scale: clampTransform(value.scale, MIN_CLIP_SCALE, MAX_CLIP_SCALE),
+      rotation: clampTransform(value.rotation, -360, 360),
+    }
+  }
+
+  // Once a clip has keyframes, transform edits become keyframes at the
+  // playhead so every adjustment is animatable. Without keyframes they edit
+  // the clip's static transform.
+  function setClipTransform(trackId: string, clipId: string, patch: Partial<TransformValue>) {
+    const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
+    const clip = track?.clips.find((c) => c.id === clipId)
+    if (!clip) return
+    const current = transformAt(clip, playhead.value)
+    const next = clampTransformPatch({ ...current, ...patch })
+    pushHistory(`transform-${clipId}`)
+    if (hasTransformAnimation(clip)) {
+      clip.keyframes = upsertTransformKeyframe(clip, playhead.value, next)
+    } else {
+      clip.x = next.x
+      clip.y = next.y
+      clip.scale = next.scale
+      clip.rotation = next.rotation
+    }
+    playlistChanged()
+  }
+
+  function toggleClipKeyframe(trackId: string, clipId: string) {
+    const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
+    const clip = track?.clips.find((c) => c.id === clipId)
+    if (!clip) return
+    pushHistory(`keyframe-${clipId}`)
+    if (keyframeAt(clip, playhead.value)) {
+      const value = transformAt(clip, playhead.value)
+      const frames = removeTransformKeyframe(clip, playhead.value)
+      if (frames.length === 0) {
+        clip.x = value.x
+        clip.y = value.y
+        clip.scale = value.scale
+        clip.rotation = value.rotation
+        clip.keyframes = undefined
+      } else {
+        clip.keyframes = frames
+      }
+      notify('Keyframe dihapus.', 'info')
+    } else {
+      clip.keyframes = upsertTransformKeyframe(clip, playhead.value, transformAt(clip, playhead.value))
+      notify('Keyframe ditambahkan.', 'success')
+    }
+    playlistChanged()
+  }
+
+  function clearClipTransform(trackId: string, clipId: string) {
+    const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
+    const clip = track?.clips.find((c) => c.id === clipId)
+    if (!clip) return
+    pushHistory(`transform-reset-${clipId}`)
+    clip.x = 0.5
+    clip.y = 0.5
+    clip.scale = 1
+    clip.rotation = 0
+    clip.keyframes = undefined
+    notify('Transform clip direset.', 'info')
+    playlistChanged()
+  }
+
   function playlistChanged() {
     scheduleSave()
   }
 
-  function deleteSelected() {
-    const found = selected.value
-    if (!project.value || !found) return
-    if (found.track.locked) {
-      notify('Track terkunci.', 'error')
+  function setClipTransition(type: TransitionType | 'none', duration?: number, clipId?: string) {
+    const entries = clipId
+      ? [locateClip(clipId)].filter((entry): entry is { track: Track; clip: Clip } => !!entry)
+      : selectedEntries.value
+    const targets = entries.filter(({ track, clip }) => track.kind === 'video' && !!clip.asset_id)
+    if (targets.length === 0) {
+      notify('Pilih clip video dulu untuk menambah transisi.', 'info')
       return
     }
     mutate(() => {
-      found.track.clips = found.track.clips.filter((c) => c.id !== found.clip.id)
+      for (const { clip } of targets) {
+        if (type === 'none') {
+          clip.transition = null
+          continue
+        }
+        const limit = Math.max(0.1, Math.min(3, clip.duration))
+        const wanted = duration ?? clip.transition?.duration ?? DEFAULT_TRANSITION_DURATION
+        clip.transition = { type, duration: Math.min(limit, Math.max(0.1, wanted)) }
+      }
+    }, 'transition')
+    notify(type === 'none' ? 'Transisi dihapus.' : 'Transisi diterapkan.', 'success')
+  }
+
+  function uniqueClipId(suffix = ''): string {
+    return `clip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}${suffix}`
+  }
+
+  function deleteSelected(ripple = rippleDelete.value) {
+    if (!project.value) return
+    const entries = selectedEntries.value
+    if (entries.length === 0) return
+    const removals = new Map<string, Set<string>>()
+    const addRemoval = (trackId: string, clipId: string) => {
+      let ids = removals.get(trackId)
+      if (!ids) {
+        ids = new Set()
+        removals.set(trackId, ids)
+      }
+      ids.add(clipId)
+    }
+    let blocked = 0
+    for (const { track, clip } of entries) {
+      if (track.locked) {
+        blocked++
+        continue
+      }
+      addRemoval(track.id, clip.id)
+      const partner = linkedPartner(clip)
+      if (partner && !partner.track.locked) addRemoval(partner.track.id, partner.clip.id)
+    }
+    if (removals.size === 0) {
+      notify('Track terkunci.', 'error')
+      return
+    }
+    if (blocked > 0) notify(`${blocked} clip di track terkunci dilewati.`, 'info')
+    const timeline = project.value.timeline
+    mutate(() => {
+      for (const [trackId, ids] of removals) {
+        const track = timeline.tracks.find((t) => t.id === trackId)
+        if (!track) continue
+        const removed = track.clips.filter((c) => ids.has(c.id))
+        track.clips = track.clips.filter((c) => !ids.has(c.id))
+        if (!ripple || removed.length === 0) continue
+        const intervals = removed
+          .map((c) => ({ start: c.start, end: c.start + c.duration }))
+          .sort((a, b) => a.start - b.start)
+        for (const clip of track.clips) {
+          let shift = 0
+          for (const interval of intervals) {
+            const before = Math.min(interval.end, clip.start) - Math.min(interval.start, clip.start)
+            if (before > 0) shift += before
+          }
+          clip.start = Math.max(0, clip.start - shift)
+        }
+      }
     })
-    selection.value = null
+    clearSelection()
+  }
+
+  function overwriteRange(track: Track, start: number, end: number) {
+    const kept: Clip[] = []
+    for (const clip of track.clips) {
+      const clipEnd = clip.start + clip.duration
+      if (clipEnd <= start + 1e-6 || clip.start >= end - 1e-6) {
+        kept.push(clip)
+        continue
+      }
+      if (clip.start >= start - 1e-6 && clipEnd <= end + 1e-6) continue
+      if (clip.start < start - 1e-6 && clipEnd > end + 1e-6) {
+        const right: Clip = {
+          ...(JSON.parse(JSON.stringify(clip)) as Clip),
+          id: uniqueClipId('_r'),
+          start: end,
+          in: clip.in + (end - clip.start),
+          duration: clipEnd - end,
+          linked_id: undefined,
+        }
+        clip.duration = start - clip.start
+        clip.out = clip.in + clip.duration
+        kept.push(clip, right)
+        continue
+      }
+      if (clip.start < start - 1e-6) {
+        clip.duration = start - clip.start
+        clip.out = clip.in + clip.duration
+        kept.push(clip)
+        continue
+      }
+      const cut = end - clip.start
+      clip.start = end
+      clip.in += cut
+      clip.duration -= cut
+      clip.out = clip.in + clip.duration
+      kept.push(clip)
+    }
+    track.clips = kept.sort((a, b) => a.start - b.start)
+  }
+
+  function placeClip(track: Track, clip: Clip, mode: EditMode = editMode.value) {
+    if (mode === 'insert') {
+      for (const existing of track.clips) {
+        if (existing.start >= clip.start - 1e-6) existing.start += clip.duration
+      }
+    } else {
+      overwriteRange(track, clip.start, clip.start + clip.duration)
+    }
+    track.clips.push(clip)
+    track.clips.sort((a, b) => a.start - b.start)
+  }
+
+  function copySelected() {
+    const entries = selectedEntries.value
+    if (entries.length === 0) return
+    const seen = new Set(entries.map((entry) => entry.clip.id))
+    const group = [...entries]
+    for (const { clip } of entries) {
+      const partner = linkedPartner(clip)
+      if (partner && !seen.has(partner.clip.id)) {
+        seen.add(partner.clip.id)
+        group.push(partner)
+      }
+    }
+    clipboard.value = group.map(({ track, clip }) => ({
+      trackId: track.id,
+      clip: JSON.parse(JSON.stringify(clip)) as Clip,
+    }))
+    notify(`${group.length} clip disalin.`, 'success')
+  }
+
+  function cutSelected() {
+    if (selectedEntries.value.length === 0) return
+    copySelected()
+    deleteSelected(false)
+  }
+
+  function pasteAtPlayhead() {
+    const timeline = project.value?.timeline
+    const items = clipboard.value
+    if (!timeline || items.length === 0) return
+    const minStart = Math.min(...items.map((item) => item.clip.start))
+    const base = playhead.value
+    const idMap = new Map<string, string>()
+    const prepared: Array<{ track: Track; clip: Clip; linkedFrom?: string }> = []
+    for (const item of items) {
+      const source = timeline.tracks.find((t) => t.id === item.trackId)
+      const track =
+        (source && !source.locked ? source : null) ??
+        timeline.tracks.find((t) => t.kind === source?.kind && !t.locked) ??
+        null
+      if (!track) continue
+      const copy = JSON.parse(JSON.stringify(item.clip)) as Clip
+      copy.id = uniqueClipId()
+      copy.start = Math.max(0, base + (item.clip.start - minStart))
+      const linkedFrom = copy.linked_id
+      copy.linked_id = undefined
+      idMap.set(item.clip.id, copy.id)
+      prepared.push({ track, clip: copy, linkedFrom })
+    }
+    if (prepared.length === 0) {
+      notify('Tidak ada track tujuan yang tersedia.', 'error')
+      return
+    }
+    for (const item of prepared) {
+      if (item.linkedFrom && idMap.has(item.linkedFrom)) item.clip.linked_id = idMap.get(item.linkedFrom)
+    }
+    const span = Math.max(...prepared.map((p) => p.clip.start + p.clip.duration)) - base
+    mutate(() => {
+      if (editMode.value === 'insert') {
+        const touched = new Set(prepared.map((p) => p.track.id))
+        for (const track of timeline.tracks) {
+          if (!touched.has(track.id)) continue
+          for (const clip of track.clips) if (clip.start >= base - 1e-6) clip.start += span
+        }
+        for (const item of prepared) {
+          item.track.clips.push(item.clip)
+          item.track.clips.sort((a, b) => a.start - b.start)
+        }
+      } else {
+        for (const item of prepared) placeClip(item.track, item.clip)
+      }
+    })
+    setSelection(prepared.map((p) => ({ trackId: p.track.id, clipId: p.clip.id })))
+    notify(`${prepared.length} clip ditempel di playhead.`, 'success')
+  }
+
+  function nudgeSelected(seconds: number) {
+    if (!project.value || seconds === 0) return
+    const entries = selectedEntries.value
+    if (entries.length === 0) return
+    const seen = new Set(entries.map((entry) => entry.clip.id))
+    const group = [...entries]
+    for (const { clip } of entries) {
+      const partner = linkedPartner(clip)
+      if (partner && !seen.has(partner.clip.id)) {
+        seen.add(partner.clip.id)
+        group.push(partner)
+      }
+    }
+    const minStart = Math.min(...group.map((item) => item.clip.start))
+    const delta = Math.max(seconds, -minStart)
+    if (Math.abs(delta) < 1e-9) return
+    mutate(() => {
+      for (const item of group) item.clip.start = Math.max(0, item.clip.start + delta)
+    }, 'nudge')
+  }
+
+  function splitClipAt(trackId: string, clipId: string, time: number): boolean {
+    const timeline = project.value?.timeline
+    const track = timeline?.tracks.find((t) => t.id === trackId)
+    const clip = track?.clips.find((c) => c.id === clipId)
+    if (!timeline || !track || !clip) return false
+    if (track.locked) {
+      notify('Track terkunci.', 'error')
+      return false
+    }
+    const offset = time - clip.start
+    if (offset <= 0.02 || offset >= clip.duration - 0.02) {
+      notify('Klik di dalam clip untuk memotong.', 'info')
+      return false
+    }
+    mutate(() => {
+      splitClipPair(track, clip, time)
+      selection.value = { trackId, clipId }
+      selectionIds.value = [clipId]
+    }, `split-${clipId}`)
+    return true
+  }
+
+  function splitClipPair(track: Track, clip: Clip, time: number) {
+    const right: Clip = {
+      ...(JSON.parse(JSON.stringify(clip)) as Clip),
+      id: uniqueClipId('_split'),
+      start: time,
+      in: clip.in + (time - clip.start),
+      duration: clip.start + clip.duration - time,
+    }
+    right.linked_id = undefined
+    clip.duration = time - clip.start
+    clip.out = clip.in + clip.duration
+    const partner = linkedPartner(clip)
+    let partnerRight: { track: Track; clip: Clip } | null = null
+    if (partner && !partner.track.locked) {
+      const partnerOffset = time - partner.clip.start
+      if (partnerOffset > 0.02 && partnerOffset < partner.clip.duration - 0.02) {
+        const pRight: Clip = {
+          ...(JSON.parse(JSON.stringify(partner.clip)) as Clip),
+          id: uniqueClipId('_split'),
+          start: time,
+          in: partner.clip.in + partnerOffset,
+          duration: partner.clip.duration - partnerOffset,
+        }
+        pRight.linked_id = right.id
+        right.linked_id = pRight.id
+        partner.clip.duration = partnerOffset
+        partner.clip.out = partner.clip.in + partnerOffset
+        partnerRight = { track: partner.track, clip: pRight }
+      }
+    }
+    track.clips.push(right)
+    track.clips.sort((a, b) => a.start - b.start)
+    if (partnerRight) {
+      partnerRight.track.clips.push(partnerRight.clip)
+      partnerRight.track.clips.sort((a, b) => a.start - b.start)
+    }
   }
 
   function splitAtPlayhead() {
@@ -329,26 +889,7 @@ export const useEditor = defineStore('editor', () => {
       notify('Playhead tidak berada di dalam clip.', 'info')
       return
     }
-    if (targetTrack.locked) {
-      notify('Track terkunci.', 'error')
-      return
-    }
-    mutate(() => {
-      const offset = t - target!.start
-      const right: Clip = {
-        ...JSON.parse(JSON.stringify(target)),
-        id: `clip_${Date.now()}_split`,
-        start: t,
-        in: target!.in + offset,
-        duration: target!.duration - offset,
-        words: undefined,
-      }
-      target!.duration = offset
-      target!.out = target!.in + offset
-      targetTrack!.clips.push(right)
-      targetTrack!.clips.sort((a, b) => a.start - b.start)
-      selection.value = { trackId: targetTrack!.id, clipId: target!.id }
-    })
+    splitClipAt(targetTrack.id, target.id, t)
   }
 
   function addTextOverlay(text = 'Teks baru') {
@@ -368,6 +909,42 @@ export const useEditor = defineStore('editor', () => {
     })
     mutate(() => track.clips.push(clip))
     selection.value = { trackId: track.id, clipId: clip.id }
+    selectionIds.value = [clip.id]
+  }
+
+  function nextTrackName(kind: TrackKind): string {
+    const labels: Record<TrackKind, string> = {
+      video: 'Video',
+      audio: 'Audio',
+      overlay: 'Overlay',
+      caption: 'Caption',
+    }
+    const count = project.value?.timeline.tracks.filter((t) => t.kind === kind).length ?? 0
+    return count === 0 ? labels[kind] : `${labels[kind]} ${count + 1}`
+  }
+
+  // Dropping a video on a spot that is already taken adds a new layer directly
+  // above the target track instead of rejecting the edit.
+  function insertTrackAbove(target: Track): Track | null {
+    const timeline = project.value?.timeline
+    if (!timeline) return null
+    if (timeline.tracks.length >= 64) {
+      notify('Batas 64 track tercapai.', 'error')
+      return null
+    }
+    const track: Track = {
+      id: `${target.kind}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+      kind: target.kind,
+      name: nextTrackName(target.kind),
+      muted: false,
+      locked: false,
+      hidden: false,
+      height: target.height || 52,
+      clips: [],
+    }
+    mutate(() => timeline.tracks.splice(timeline.tracks.indexOf(target), 0, track), 'auto-layer')
+    notify(`Layer ${track.name} dibuat otomatis.`, 'info')
+    return track
   }
 
   function addAsset(asset: Asset, atTime?: number, trackId?: string) {
@@ -384,6 +961,11 @@ export const useEditor = defineStore('editor', () => {
     let start = atTime ?? playhead.value
     if (start < 0.05) start = track.clips.reduce((end, c) => Math.max(end, c.start + c.duration), 0)
     const length = asset.kind === 'image' ? 5 : Math.max(0.2, asset.duration || 3)
+    if (kind === 'video' && findCollision(track, start, length)) {
+      const layered = insertTrackAbove(track)
+      if (!layered) return
+      track = layered
+    }
     const clip = defaultClip({
       asset_id: asset.id,
       start,
@@ -394,19 +976,22 @@ export const useEditor = defineStore('editor', () => {
       y: 0.5,
       scale: 1,
     })
-    mutate(() => {
-      track.clips.push(clip)
-      track.clips.sort((a, b) => a.start - b.start)
-      if (asset.kind === 'video' && asset.has_audio) {
-        const audioTrack = trackByKind('audio')
-        if (audioTrack) {
-          audioTrack.clips.push({ ...clip, id: `clip_${Date.now()}_a`, duration: length, out: length })
-          audioTrack.clips.sort((a, b) => a.start - b.start)
-        }
-      }
-    })
+    // A video's own audio stays inside the clip; it is mixed at playback and
+    // render time, so no separate clip is placed on the audio track.
+    mutate(() => placeClip(track!, clip))
     selection.value = { trackId: track.id, clipId: clip.id }
+    selectionIds.value = [clip.id]
     notify(`${asset.filename} ditambahkan ke timeline.`, 'success')
+  }
+
+  function addAssetOnNewTrack(asset: Asset, atTime?: number) {
+    const timeline = project.value?.timeline
+    if (!timeline) return
+    const kind: TrackKind = asset.kind === 'audio' ? 'audio' : asset.kind === 'image' ? 'overlay' : 'video'
+    const anchor = timeline.tracks.find((t) => t.kind === kind) ?? null
+    const track = anchor ? insertTrackAbove(anchor) : addTrack(kind)
+    if (!track) return
+    addAsset(asset, atTime, track.id)
   }
 
   function setTrackMuted(trackId: string, muted: boolean) {
@@ -419,6 +1004,108 @@ export const useEditor = defineStore('editor', () => {
     const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
     if (!track) return
     mutate(() => (track.locked = locked))
+  }
+
+  function setTrackHidden(trackId: string, hidden: boolean) {
+    const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
+    if (!track) return
+    mutate(() => (track.hidden = hidden))
+  }
+
+  function setTrackHeight(trackId: string, height: number, commit = false) {
+    const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
+    if (!track) return
+    const value = Math.min(160, Math.max(36, Math.round(height)))
+    if (value === track.height) return
+    if (commit) {
+      mutate(() => (track.height = value), 'track-height')
+      return
+    }
+    track.height = value
+    pushHistory('track-height')
+    scheduleSave()
+  }
+
+  function addTrack(kind: TrackKind): Track | null {
+    const timeline = project.value?.timeline
+    if (!timeline) return null
+    if (timeline.tracks.length >= 64) {
+      notify('Batas 64 track tercapai.', 'error')
+      return null
+    }
+    const sameKind = timeline.tracks.filter((t) => t.kind === kind)
+    const labels: Record<TrackKind, string> = {
+      video: 'Video',
+      audio: 'Audio',
+      overlay: 'Overlay',
+      caption: 'Caption',
+    }
+    const name = sameKind.length === 0 ? labels[kind] : `${labels[kind]} ${sameKind.length + 1}`
+    const track: Track = {
+      id: `${kind}-${Date.now().toString(36)}`,
+      kind,
+      name,
+      muted: false,
+      locked: false,
+      hidden: false,
+      height: 52,
+      clips: [],
+    }
+    const index = timeline.tracks.findIndex((t) => t.kind === kind)
+    mutate(() => timeline.tracks.splice(index < 0 ? timeline.tracks.length : index, 0, track))
+    return track
+  }
+
+  function removeTrack(trackId: string) {
+    const timeline = project.value?.timeline
+    if (!timeline) return
+    const index = timeline.tracks.findIndex((t) => t.id === trackId)
+    if (index < 0) return
+    if (timeline.tracks.length <= 1) {
+      notify('Minimal satu track harus tersisa.', 'error')
+      return
+    }
+    mutate(() => timeline.tracks.splice(index, 1))
+    pruneSelection()
+  }
+
+  function moveTrack(trackId: string, delta: number) {
+    const tracks = project.value?.timeline.tracks
+    if (!tracks) return
+    const index = tracks.findIndex((t) => t.id === trackId)
+    const target = index + delta
+    if (index < 0 || target < 0 || target >= tracks.length) return
+    mutate(() => {
+      const [track] = tracks.splice(index, 1)
+      tracks.splice(target, 0, track)
+    })
+  }
+
+  function moveClipToTrack(clipId: string, fromTrackId: string, toTrackId: string): boolean {
+    const tracks = project.value?.timeline.tracks
+    if (!tracks) return false
+    const from = tracks.find((t) => t.id === fromTrackId)
+    const to = tracks.find((t) => t.id === toTrackId)
+    if (!from || !to || from.id === to.id) return from?.id === to?.id
+    if (to.locked) {
+      notify('Track tujuan terkunci.', 'error')
+      return false
+    }
+    if (to.kind !== from.kind) {
+      notify(`Clip ${from.kind} tidak cocok untuk track ${to.kind}.`, 'error')
+      return false
+    }
+    mutate(() => {
+      const index = from.clips.findIndex((c) => c.id === clipId)
+      if (index < 0) return
+      const [clip] = from.clips.splice(index, 1)
+      clip.start = Math.max(0, clip.start)
+      to.clips.push(clip)
+      to.clips.sort((a, b) => a.start - b.start)
+    }, `drag-${clipId}`)
+    selection.value = { trackId: to.id, clipId }
+    selectionIds.value = [clipId]
+    return true
   }
 
   function updateCaptionStyle(patch: Partial<CaptionStyle>, historyKey = 'caption-style') {
@@ -461,11 +1148,14 @@ export const useEditor = defineStore('editor', () => {
     assets.value = assets.value.filter((a) => a.id !== asset.id)
   }
 
-  function closeProject() {
+  async function closeProject() {
     pause()
+    await flushSave()
     project.value = null
     assets.value = []
     selection.value = null
+    selectionIds.value = []
+    clipboard.value = []
     playhead.value = 0
     analysis.value = null
     undoStack.value = []
@@ -477,6 +1167,10 @@ export const useEditor = defineStore('editor', () => {
     assets,
     fonts,
     selection,
+    selectionIds,
+    rippleDelete,
+    editMode,
+    clipboard,
     playhead,
     playing,
     zoom,
@@ -488,6 +1182,9 @@ export const useEditor = defineStore('editor', () => {
     selected,
     selectedClip,
     selectedTrack,
+    selectedEntries,
+    selectionCount,
+    canPaste,
     canUndo,
     canRedo,
     assetMap,
@@ -503,14 +1200,34 @@ export const useEditor = defineStore('editor', () => {
     togglePlay,
     seek,
     select,
+    setSelection,
+    isSelected,
+    selectAll,
     clearSelection,
     updateClip,
+    setClipTransform,
+    toggleClipKeyframe,
+    clearClipTransform,
+    setClipTransition,
+    findCollision,
     deleteSelected,
+    copySelected,
+    cutSelected,
+    pasteAtPlayhead,
+    nudgeSelected,
     splitAtPlayhead,
+    splitClipAt,
     addTextOverlay,
     addAsset,
+    addAssetOnNewTrack,
     setTrackMuted,
     setTrackLocked,
+    setTrackHidden,
+    setTrackHeight,
+    addTrack,
+    removeTrack,
+    moveTrack,
+    moveClipToTrack,
     updateCaptionStyle,
     importFiles,
     removeAsset,
@@ -519,6 +1236,9 @@ export const useEditor = defineStore('editor', () => {
     redo,
     pushHistory,
     scheduleSave,
+    flushSave,
+    saveNow,
+    flushKeepalive,
     mutate,
   }
 })

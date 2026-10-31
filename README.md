@@ -29,14 +29,15 @@ Dokumen lain:
 **Caption**
 
 - Generator caption dari transkrip, mengikuti trim/split clip (waktu kata dipetakan ulang ke timeline).
-- Gaya caption: font sistem, ukuran, bold/italic, warna, stroke, shadow, uppercase, posisi vertikal, highlight karaoke, jumlah kata per potongan.
+- Gaya caption: font (17 keluarga Google Fonts OFL bawaan + font sistem), ukuran, bold/italic, warna, stroke, shadow, uppercase, posisi vertikal, highlight karaoke, jumlah kata per potongan.
 - Preview caption real-time di stage editor.
 - Caption di-export sebagai hardsub ASS.
 
 **Overlay teks & gambar**
 
-- Overlay teks dengan font, stroke, shadow, background, rotasi, opacity.
+- Overlay teks dengan font (Google Fonts OFL bawaan + sistem), stroke, shadow, background, rotasi, opacity; bisa digeser dan di-scale langsung di preview.
 - Overlay gambar dengan posisi, skala, rotasi, opacity, dan blend mode (normal, multiply, screen, overlay, soft/hard light, add, difference, darken, lighten, dodge, burn).
+- Overlay teks/gambar selalu tampil **di atas** semua track video (di preview maupun hasil export), berapa pun urutan track-nya; dalam satu jenis track, track paling atas adalah lapisan teratas.
 - Preview blend mode memakai CSS `mix-blend-mode`; hasil export memakai `blend` + `maskedmerge` ffmpeg.
 
 **Preview & export**
@@ -61,14 +62,38 @@ Dokumen lain:
 
 ## Prasyarat
 
-- Windows 10/11 (target utama), WebView2 Runtime (biasanya sudah ada).
-- **Go 1.26+**, **Node.js 20+**, **Rust toolchain** (`rustup`, MSVC build tools).
-- **ffmpeg & ffprobe** tersedia di `PATH` (atau set `FFMPEG_PATH`).
-- Opsional: whisper.cpp (`whisper-cli.exe`) + model `ggml-small.bin` untuk transkrip nyata.
+**Untuk memakai aplikasi yang sudah terpasang** (tanpa install toolchain):
 
-## Menjalankan
+- Windows 10/11 + WebView2 Runtime (Windows 11 biasanya sudah punya).
+- **ffmpeg & ffprobe** tersedia di `PATH`. Cek dengan `ffmpeg -version`.
+- Opsional: whisper.cpp + model untuk transkrip nyata; API key DeepSeek/TypeSafe/Gemini untuk fitur AI.
 
-### Mode desktop (Tauri)
+**Untuk development atau build dari source:**
+
+- **Go 1.26+**, **Node.js 20+**, **Rust toolchain** (`rustup` + MSVC build tools).
+- ffmpeg/ffprobe di `PATH` (atau set `FFMPEG_PATH`).
+
+## Cara Menjalankan
+
+### A. Pakai aplikasi terpasang (cara normal)
+
+1. Tutup aplikasi jika sedang berjalan, lalu jalankan installer:
+   - `src-tauri/target-build/release/bundle/nsis/AutoCut Workstation_0.1.3_x64-setup.exe`, atau
+   - `src-tauri/target-build/release/bundle/msi/AutoCut Workstation_0.1.3_x64_en-US.msi`.
+2. Buka **AutoCut Workstation** dari Start Menu. Bisa juga langsung:
+   `%LOCALAPPDATA%\AutoCut Workstation\autocut-workstation.exe`.
+3. Engine Go menyala otomatis sebagai sidecar (port acak + token acak). **Tidak perlu** membuka terminal atau menjalankan server manual.
+4. Alur pertama kali:
+   - Klik **Project Baru** → pilih resolusi & fps.
+   - Impor video/audio/gambar dari panel Media.
+   - Seret media ke track timeline, atur trim/posisi.
+   - `Ctrl+S` untuk memaksa simpan (autosave juga berjalan otomatis).
+   - **Export** untuk render MP4, lalu **Buka folder** untuk mengambil hasilnya.
+5. Lokasi data: `%APPDATA%\com.txshd.autocut` (database + folder project). Uninstall **tidak** menghapus data ini.
+
+Uninstall: Settings → Apps → AutoCut Workstation, atau jalankan `uninstall.exe` di folder instalasi.
+
+### B. Mode development (Tauri + hot reload)
 
 ```bash
 npm install
@@ -78,20 +103,38 @@ npm run dev
 
 `npm run dev` akan:
 1. Build engine Go ke `src-tauri/binaries/autocut-server-<target-triple>.exe`.
-2. Menjalankan Vite dev server.
-3. Membuka aplikasi Tauri; shell menyalakan sidecar di port acak dengan token acak.
+2. Menjalankan Vite dev server (hot reload UI).
+3. Membuka window Tauri; shell menyalakan sidecar engine secara otomatis.
 
-### Build installer
+### C. Build installer sendiri
 
 ```bash
-npm run build
+CARGO_TARGET_DIR=target-build npm run build
 ```
 
-Menghasilkan installer di `src-tauri/target/release/bundle/` (MSI/NSIS).
+Butuh Rust toolchain. Hasil build:
 
-### Mode browser (tanpa Tauri)
+| File | Fungsi |
+|---|---|
+| `src-tauri/target-build/release/autocut-workstation.exe` | Aplikasi utama (portable) |
+| `src-tauri/target-build/release/autocut-server.exe` | Engine Go (sidecar) — **wajib ada di folder yang sama** |
+| `src-tauri/target-build/release/bundle/nsis/AutoCut Workstation_0.1.3_x64-setup.exe` | Installer NSIS |
+| `src-tauri/target-build/release/bundle/msi/AutoCut Workstation_0.1.3_x64_en-US.msi` | Installer MSI |
 
-Berguna untuk debug UI cepat:
+### D. Jalankan .exe hasil build tanpa installer (portable)
+
+1. Buka folder `src-tauri/target-build/release/`.
+2. Jalankan `autocut-workstation.exe` (double-click, atau dari terminal):
+   ```bash
+   ./src-tauri/target-build/release/autocut-workstation.exe
+   ```
+3. Jangan pindahkan `autocut-workstation.exe` sendirian — `autocut-server.exe` harus tetap satu folder karena Tauri menyalakannya sebagai sidecar. Kalau ingin dipindah, salin **kedua file** bersama-sama.
+4. Tidak perlu install, tidak muncul di Start Menu, dan tidak ada uninstaller. Untuk menghapus, tutup aplikasi lalu hapus foldernya. Data project tetap tersimpan di `%APPDATA%\com.txshd.autocut`.
+5. Untuk update portable: tutup aplikasi, timpa kedua file `.exe` dengan hasil build baru.
+
+Syaratnya tetap sama: ffmpeg/ffprobe harus ada di `PATH`. Jika `autocut-server.exe` tidak ditemukan di sebelah aplikasi, window akan menampilkan "Engine belum siap".
+
+### E. Mode browser (tanpa Tauri, untuk debug UI)
 
 ```bash
 # terminal 1 — engine
@@ -101,7 +144,20 @@ go run ./cmd/server
 npm --prefix web run dev
 ```
 
-UI memakai `VITE_API_URL` (default `http://127.0.0.1:8080`).
+Buka `http://localhost:5173`. UI memakai `VITE_API_URL` (default `http://127.0.0.1:8080`); set jika engine berjalan di port lain:
+
+```bash
+VITE_API_URL=http://127.0.0.1:8099 npm --prefix web run dev
+```
+
+### Troubleshooting singkat
+
+| Gejala | Penyebab / solusi |
+|---|---|
+| Layar "Engine belum siap" di app | Sidecar gagal start atau ffmpeg tidak ditemukan. Cek `ffmpeg -version` di `PATH`. |
+| Port 8080 sudah dipakai (mode browser) | Jalankan engine dengan `PORT=8099`, lalu set `VITE_API_URL` sesuai. |
+| Transkrip ditandai **mock** | whisper.cpp/model tidak ditemukan; silence cut tetap jalan, caption tidak realistis. |
+| Export gagal encoder | Pilih encoder `libx264` di dialog export (AMF/NVENC butuh GPU/driver sesuai). |
 
 ## Konfigurasi
 
@@ -136,6 +192,7 @@ Jika whisper tidak ditemukan, transkrip memakai **mock transcript** yang ditanda
 | `Space` | Play/pause |
 | `Ctrl+Z` / `Ctrl+Shift+Z` / `Ctrl+Y` | Undo / redo |
 | `Ctrl+B` | Split clip di playhead |
+| `Ctrl+S` | Simpan timeline sekarang |
 | `Delete` / `Backspace` | Hapus clip terpilih |
 | `←` / `→` | Geser playhead satu frame |
 

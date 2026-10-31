@@ -3,7 +3,10 @@
 package fonts
 
 import (
+	"bytes"
+	"embed"
 	"encoding/binary"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,12 +15,24 @@ import (
 	"unicode/utf16"
 )
 
+const (
+	// SourceBundled marks fonts shipped inside the app (Google Fonts, OFL).
+	SourceBundled = "bundled"
+	// SourceSystem marks fonts installed on the machine.
+	SourceSystem = "system"
+)
+
+//go:embed bundled/*.ttf
+var bundledTTFs embed.FS
+
 // Font is one installed font face.
 type Font struct {
+	ID        string `json:"id"`
 	Family    string `json:"family"`
 	Subfamily string `json:"subfamily"`
 	FullName  string `json:"full_name"`
 	Path      string `json:"path"`
+	Source    string `json:"source"`
 }
 
 // Index is a lazily loaded catalog of installed fonts.
@@ -30,6 +45,84 @@ type Index struct {
 
 func NewIndex() *Index {
 	return &Index{}
+}
+
+// BundledDir is where embedded fonts are extracted so ffmpeg/libass can read
+// them as regular files. It lives in the per-user cache directory.
+func BundledDir() string {
+	if dir, err := os.UserCacheDir(); err == nil && dir != "" {
+		return filepath.Join(dir, "AutoCut", "fonts")
+	}
+	return filepath.Join(os.TempDir(), "autocut-fonts")
+}
+
+// BundledFile returns the embedded font bytes for an ID such as "inter-700".
+func BundledFile(id string) ([]byte, error) {
+	id = strings.ToLower(strings.TrimSpace(id))
+	if id == "" {
+		return nil, os.ErrNotExist
+	}
+	for _, r := range id {
+		valid := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-'
+		if !valid {
+			return nil, os.ErrNotExist
+		}
+	}
+	return bundledTTFs.ReadFile("bundled/" + id + ".ttf")
+}
+
+// ExportBundled writes every embedded font into dir (idempotent). The renderer
+// uses it to build a fonts directory for libass without touching system fonts.
+func ExportBundled(dir string) error {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	entries, err := bundledTTFs.ReadDir("bundled")
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".ttf") {
+			continue
+		}
+		data, err := bundledTTFs.ReadFile("bundled/" + entry.Name())
+		if err != nil {
+			continue
+		}
+		target := filepath.Join(dir, entry.Name())
+		if info, err := os.Stat(target); err == nil && info.Size() == int64(len(data)) {
+			continue
+		}
+		if err := os.WriteFile(target, data, 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExportFace copies the resolved face for a family into dir so libass can find
+// it through fontsdir. It is a no-op when the face cannot be resolved.
+func (i *Index) ExportFace(dir, family string, bold, italic bool) error {
+	face := i.ResolveFace(family, bold, italic)
+	if face == "" {
+		return nil
+	}
+	info, err := os.Stat(face)
+	if err != nil || info.IsDir() {
+		return nil
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	target := filepath.Join(dir, filepath.Base(face))
+	if existing, err := os.Stat(target); err == nil && existing.Size() == info.Size() {
+		return nil
+	}
+	data, err := os.ReadFile(face)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(target, data, 0644)
 }
 
 func fontDirs() []string {
@@ -135,6 +228,7 @@ func (i *Index) loadLocked() {
 	i.byFamily = map[string]Font{}
 
 	seen := map[string]bool{}
+	i.loadBundledLocked(seen)
 	for _, dir := range fontDirs() {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -153,19 +247,13 @@ func (i *Index) loadLocked() {
 			if family == "" {
 				continue
 			}
-			dedupeKey := strings.ToLower(family + "|" + subfamily)
-			if seen[dedupeKey] {
-				continue
-			}
-			seen[dedupeKey] = true
-			font := Font{Family: family, Subfamily: subfamily, FullName: fullName, Path: path}
-			i.fonts = append(i.fonts, font)
-
-			familyKey := strings.ToLower(family)
-			existing, ok := i.byFamily[familyKey]
-			if !ok || isRegular(subfamily) && !isRegular(existing.Subfamily) {
-				i.byFamily[familyKey] = font
-			}
+			i.addFontLocked(Font{
+				Family:    family,
+				Subfamily: subfamily,
+				FullName:  fullName,
+				Path:      path,
+				Source:    SourceSystem,
+			}, seen)
 		}
 	}
 
@@ -175,6 +263,61 @@ func (i *Index) loadLocked() {
 		}
 		return i.fonts[a].Family < i.fonts[b].Family
 	})
+}
+
+func (i *Index) loadBundledLocked(seen map[string]bool) {
+	dir := BundledDir()
+	entries, err := bundledTTFs.ReadDir("bundled")
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".ttf") {
+			continue
+		}
+		data, err := bundledTTFs.ReadFile("bundled/" + entry.Name())
+		if err != nil {
+			continue
+		}
+		family, subfamily, fullName := readFontNamesAt(bytes.NewReader(data))
+		if family == "" {
+			continue
+		}
+		id := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+		path := filepath.Join(dir, entry.Name())
+		if info, err := os.Stat(path); err != nil || info.Size() != int64(len(data)) {
+			if err := os.MkdirAll(dir, 0755); err == nil {
+				if err := os.WriteFile(path, data, 0644); err != nil {
+					path = ""
+				}
+			} else {
+				path = ""
+			}
+		}
+		i.addFontLocked(Font{
+			ID:        id,
+			Family:    family,
+			Subfamily: subfamily,
+			FullName:  fullName,
+			Path:      path,
+			Source:    SourceBundled,
+		}, seen)
+	}
+}
+
+func (i *Index) addFontLocked(font Font, seen map[string]bool) {
+	dedupeKey := strings.ToLower(font.Family + "|" + font.Subfamily)
+	if seen[dedupeKey] {
+		return
+	}
+	seen[dedupeKey] = true
+	i.fonts = append(i.fonts, font)
+
+	familyKey := strings.ToLower(font.Family)
+	existing, ok := i.byFamily[familyKey]
+	if !ok || isRegular(font.Subfamily) && !isRegular(existing.Subfamily) {
+		i.byFamily[familyKey] = font
+	}
 }
 
 func isRegular(subfamily string) bool {
@@ -191,7 +334,10 @@ func readFontNames(path string) (family, subfamily, fullName string) {
 		return "", "", ""
 	}
 	defer file.Close()
+	return readFontNamesAt(file)
+}
 
+func readFontNamesAt(file io.ReaderAt) (family, subfamily, fullName string) {
 	header := make([]byte, 12)
 	if _, err := file.ReadAt(header, 0); err != nil {
 		return "", "", ""
