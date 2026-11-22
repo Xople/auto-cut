@@ -15,6 +15,7 @@ const stageEl = ref<HTMLElement | null>(null)
 const stageSize = ref({ width: 0, height: 0 })
 const shellSize = ref({ width: 0, height: 0 })
 const videoRefs = new Map<string, HTMLVideoElement>()
+const bgVideoRefs = new Map<string, HTMLVideoElement>()
 const muted = ref(false)
 const audioRefs = new Map<string, HTMLAudioElement>()
 
@@ -239,6 +240,9 @@ function syncElement(el: HTMLMediaElement | null, clip: Clip, force = false) {
 function syncAll(force = false) {
   for (const layer of videoLayers.value) {
     syncElement(videoRefs.get(layer.clip.id) ?? null, layer.clip, force)
+    if (layer.clip.background_fill === 'blur') {
+      syncElement(bgVideoRefs.get(layer.clip.id) ?? null, layer.clip, force)
+    }
   }
   for (const item of activeAudio.value) {
     const el = audioRefs.get(item.clip.id) ?? null
@@ -253,6 +257,26 @@ function setVideoRef(id: string, el: HTMLVideoElement | null) {
     syncAll(true)
   } else {
     videoRefs.delete(id)
+  }
+}
+
+function setBgVideoRef(id: string, el: HTMLVideoElement | null) {
+  if (el) {
+    bgVideoRefs.set(id, el)
+    syncAll(true)
+  } else {
+    bgVideoRefs.delete(id)
+  }
+}
+
+function bgVideoLayerStyle(clip: Clip): CSSProperties {
+  const blurPx = Math.max(8, Math.round((clip.background_blur ?? 24) * 0.75))
+  const brightness = Math.max(0.3, 1 - (clip.background_dim ?? 0.14))
+  return {
+    opacity: clip.opacity,
+    objectFit: 'cover',
+    filter: `blur(${blurPx}px) brightness(${brightness.toFixed(2)})`,
+    transform: 'scale(1.12)',
   }
 }
 
@@ -429,6 +453,17 @@ watch(
     <div ref="shell" class="preview-shell">
       <div ref="stageEl" class="stage" :style="stageStyle" @click="editor.togglePlay()">
         <template v-for="layer in visualLayers" :key="`${layer.kind}-${layer.clip.id}`">
+          <video
+            v-if="layer.kind === 'video' && layer.asset && layer.clip.background_fill === 'blur'"
+            :ref="(el) => setBgVideoRef(layer.clip.id, el as HTMLVideoElement | null)"
+            class="stage-video stage-video-bg"
+            :style="bgVideoLayerStyle(layer.clip)"
+            :src="assetUrl(project.id, layer.asset.id)"
+            muted
+            playsinline
+            @loadedmetadata="syncAll(true)"
+            @canplay="syncAll(true)"
+          />
           <video
             v-if="layer.kind === 'video' && layer.asset"
             :ref="(el) => setVideoRef(layer.clip.id, el as HTMLVideoElement | null)"

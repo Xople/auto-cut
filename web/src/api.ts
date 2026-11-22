@@ -213,3 +213,28 @@ export function subscribeTask<T>(
     source.close()
   }
 }
+
+export function subscribeProjectSync(
+  projectId: string,
+  onSync: (event: { project_id: string; reason: string }) => void,
+): () => void {
+  const source = new EventSource(url(`/api/projects/${projectId}/sync`))
+  let closed = false
+  source.onmessage = (message) => {
+    try {
+      const data = JSON.parse(message.data) as { project_id: string; reason: string }
+      if (data.reason && data.reason !== 'connected') {
+        onSync(data)
+      }
+    } catch {
+      /* ignore malformed event */
+    }
+  }
+  source.onerror = () => {
+    if (closed) return
+  }
+  return () => {
+    closed = true
+    source.close()
+  }
+}

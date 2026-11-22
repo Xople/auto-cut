@@ -390,8 +390,9 @@ func (s *Server) handleApplyCuts(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
 	var body struct {
-		Replace *bool  `json:"replace"`
-		TrackID string `json:"track_id"`
+		Replace       *bool              `json:"replace"`
+		TrackID       string             `json:"track_id"`
+		ExcludeRanges []models.TimeRange `json:"exclude_ranges"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
@@ -412,7 +413,7 @@ func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) 
 			sources = append(sources, track.Clips...)
 		}
 	}
-	generated := captions.FromTranscript(sources, transcript, p.Timeline.CaptionStyle)
+	generated := captions.FromTranscriptWithExclusions(sources, transcript, p.Timeline.CaptionStyle, body.ExcludeRanges)
 	if len(generated) == 0 {
 		http.Error(w, "Tidak ada kata transkrip yang cocok dengan clip di timeline.", http.StatusUnprocessableEntity)
 		return
@@ -712,4 +713,77 @@ func exportFileName(requested, projectName string) string {
 		name = "Export"
 	}
 	return name + ".mp4"
+}
+
+func (s *Server) handleNotifyProjectSync(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("id")
+	var body struct {
+		Reason string `json:"reason"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.Reason == "" {
+		body.Reason = "updated"
+	}
+	s.broadcastProjectSync(projectID, body.Reason)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "project_id": projectID, "reason": body.Reason})
+}
+
+func (s *Server) broadcastProjectSync(projectID, reason string) {
+	payload, _ := json.Marshal(map[string]any{
+		"project_id": projectID,
+		"reason":     reason,
+		"timestamp":  time.Now().Format(time.RFC3339Nano),
+	})
+	msg := string(payload)
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+	for _, key := range []string{projectID, "*"} {
+		for ch := range s.syncSubs[key] {
+			select {
+			case ch <- msg:
+			default:
+			}
+		}
+	}
+}
+
+func (s *Server) handleProjectSyncEvents(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("id")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	ch := make(chan string, 8)
+	s.stateMu.Lock()
+	if s.syncSubs[projectID] == nil {
+		s.syncSubs[projectID] = map[chan string]struct{}{}
+	}
+	s.syncSubs[projectID][ch] = struct{}{}
+	s.stateMu.Unlock()
+
+	defer func() {
+		s.stateMu.Lock()
+		delete(s.syncSubs[projectID], ch)
+		s.stateMu.Unlock()
+	}()
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	fmt.Fprintf(w, "data: {\"project_id\":%q,\"reason\":\"connected\"}\n\n", projectID)
+	flusher.Flush()
+
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-ch:
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			flusher.Flush()
+		}
+	}
 }

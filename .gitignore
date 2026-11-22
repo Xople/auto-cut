@@ -12,7 +12,10 @@ node_modules/
 web/node_modules/
 web/dist/
 src-tauri/target/
+src-tauri/target-build/
 src-tauri/binaries/*.exe
+.ua/.trash-*/
+.ua/tmp/
 
 # Legacy archived frontend (kept locally only)
 legacy/
@@ -76,4 +79,7 @@ Thumbs.db
 *.njsproj
 
 # Agent cache (if local only)
-.agents/
+.agents/*
+!.agents/skills/
+!.agents/skills/autocut-broll-producer/
+!.agents/skills/autocut-broll-producer/**

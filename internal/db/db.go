@@ -29,9 +29,9 @@ func InitDB(storageDir string) (*DB, error) {
 		return nil, fmt.Errorf("failed to open sqlite db: %w", err)
 	}
 
-	// Optimize SQLite for concurrent web usage
+	// Optimize SQLite for concurrent web and MCP usage
 	conn.SetMaxOpenConns(1) // modernc sqlite single-writer recommended
-	if _, err := conn.Exec(`PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;`); err != nil {
+	if _, err := conn.Exec(`PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON;`); err != nil {
 		return nil, fmt.Errorf("failed to set pragma: %w", err)
 	}
 

@@ -71,6 +71,9 @@ export interface Clip {
   words?: WordTiming[]
   transition?: Transition | null
   keyframes?: TransformKeyframe[]
+  background_fill?: '' | 'black' | 'blur'
+  background_blur?: number
+  background_dim?: number
 }
 
 export interface Track {
@@ -102,6 +105,8 @@ export interface CaptionStyle {
   uppercase: boolean
   highlight: boolean
   words_per_chunk: number
+  background_color?: string
+  background_alpha?: number
 }
 
 export interface Timeline {

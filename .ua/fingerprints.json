@@ -1,0 +1,7945 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "4851b3b28d6126fbdbca4c4b661f6d11dac9984e",
+  "generatedAt": "2026-11-22T08:23:17.410Z",
+  "files": {
+    "PLAN-TIMELINE.md": {
+      "filePath": "PLAN-TIMELINE.md",
+      "contentHash": "42e970da86397358af516b2e4cee9472f8521e4cbffe4fbaf354c6346dd67756",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 216,
+      "hasStructuralAnalysis": false
+    },
+    "PRD.md": {
+      "filePath": "PRD.md",
+      "contentHash": "ec823c133d4887cfed0e2d291e9859cf8a99b1116c8bd3b6965bd9da9e7087ed",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 156,
+      "hasStructuralAnalysis": false
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "c582d924355c96555fc96a7db8a81727615c5fa497e5821a1f64e9bb04877420",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 228,
+      "hasStructuralAnalysis": false
+    },
+    "cmd/server/main.go": {
+      "filePath": "cmd/server/main.go",
+      "contentHash": "d456c924dfa747bf81ebf4e301a9a18d2228593cb7c97e96e13842728307e20f",
+      "functions": [
+        {
+          "name": "watchParent",
+          "owner": "",
+          "params": [],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "main",
+          "owner": "",
+          "params": [],
+          "exported": false,
+          "lineCount": 39
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "autocut/internal/api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/logger",
+          "specifiers": [
+            "logger"
+          ]
+        },
+        {
+          "source": "autocut/internal/pipeline",
+          "specifiers": [
+            "pipeline"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 66,
+      "hasStructuralAnalysis": true
+    },
+    "config.example.json": {
+      "filePath": "config.example.json",
+      "contentHash": "f6b63fa50a9a83143ed86fba1a8c0e4dc0bc51ed7b3e639ae7bee186780134da",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "go.mod": {
+      "filePath": "go.mod",
+      "contentHash": "f5f7643e6e8161ca9629dca0d81cb8ee5c1e69ab4af845010c8a5988ac97ebd3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": false
+    },
+    "guidance.md": {
+      "filePath": "guidance.md",
+      "contentHash": "65f461e26455e994f5c2b902b829c6391eb4e21742992322e31a734ffc78570c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
+    "internal/ai/deepseek/client.go": {
+      "filePath": "internal/ai/deepseek/client.go",
+      "contentHash": "95ac346d2e34c5ce7d494a04e9f837d7b6986cb98102eac9c1cdf26af2f4eb63",
+      "functions": [
+        {
+          "name": "NewClient",
+          "owner": "",
+          "params": [
+            "apiKey"
+          ],
+          "returnType": "*Client",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "AnalyzeTranscriptForCuts",
+          "owner": "Client",
+          "params": [
+            "words"
+          ],
+          "returnType": "([]MacroCutProposal, error)",
+          "exported": true,
+          "lineCount": 95
+        },
+        {
+          "name": "mockAnalysis",
+          "owner": "",
+          "params": [
+            "words"
+          ],
+          "returnType": "[]MacroCutProposal",
+          "exported": false,
+          "lineCount": 21
+        }
+      ],
+      "classes": [
+        {
+          "name": "Client",
+          "methods": [
+            "AnalyzeTranscriptForCuts"
+          ],
+          "properties": [
+            "apiKey",
+            "httpClient"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "MacroCutProposal",
+          "methods": [],
+          "properties": [
+            "StartIndex",
+            "EndIndex",
+            "ExcerptText",
+            "Reason",
+            "Explanation"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "ChatMessage",
+          "methods": [],
+          "properties": [
+            "Role",
+            "Content"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "ChatRequest",
+          "methods": [],
+          "properties": [
+            "Model",
+            "Messages",
+            "ResponseFormat",
+            "Temperature"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "ChatResponse",
+          "methods": [],
+          "properties": [
+            "Choices"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "Client",
+        "NewClient",
+        "MacroCutProposal",
+        "ChatMessage",
+        "ChatRequest",
+        "ChatResponse",
+        "AnalyzeTranscriptForCuts"
+      ],
+      "totalLines": 179,
+      "hasStructuralAnalysis": true
+    },
+    "internal/ai/gemini/client.go": {
+      "filePath": "internal/ai/gemini/client.go",
+      "contentHash": "30f9411610239fc964280c2d30c510e7d59575e9a0bdd92d6d34c2423c0fbaec",
+      "functions": [
+        {
+          "name": "NewClient",
+          "owner": "",
+          "params": [
+            "apiKey"
+          ],
+          "returnType": "*Client",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "SanityCheckCutlist",
+          "owner": "Client",
+          "params": [
+            "fullTranscript",
+            "origDur",
+            "cutDur",
+            "cuts"
+          ],
+          "returnType": "(passed bool, report string, err error)",
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "GenerateYouTubeMetadata",
+          "owner": "Client",
+          "params": [
+            "keptTranscript",
+            "finalDuration"
+          ],
+          "returnType": "(*models.YouTubeMetadata, error)",
+          "exported": true,
+          "lineCount": 72
+        },
+        {
+          "name": "generateContent",
+          "owner": "Client",
+          "params": [
+            "prompt",
+            "mimeType"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 55
+        },
+        {
+          "name": "truncate",
+          "owner": "",
+          "params": [
+            "s",
+            "maxChars"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "mockMetadata",
+          "owner": "",
+          "params": [
+            "dur"
+          ],
+          "returnType": "*models.YouTubeMetadata",
+          "exported": false,
+          "lineCount": 17
+        }
+      ],
+      "classes": [
+        {
+          "name": "Client",
+          "methods": [
+            "SanityCheckCutlist",
+            "GenerateYouTubeMetadata",
+            "generateContent"
+          ],
+          "properties": [
+            "apiKey",
+            "model",
+            "httpClient"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "GeminiRequest",
+          "methods": [],
+          "properties": [
+            "Contents",
+            "GenerationConfig"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Content",
+          "methods": [],
+          "properties": [
+            "Role",
+            "Parts"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Part",
+          "methods": [],
+          "properties": [
+            "Text"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "GenerationConfig",
+          "methods": [],
+          "properties": [
+            "Temperature",
+            "ResponseMimeType"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "GeminiResponse",
+          "methods": [],
+          "properties": [
+            "Candidates"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "Client",
+        "NewClient",
+        "GeminiRequest",
+        "Content",
+        "Part",
+        "GenerationConfig",
+        "GeminiResponse",
+        "SanityCheckCutlist",
+        "GenerateYouTubeMetadata"
+      ],
+      "totalLines": 265,
+      "hasStructuralAnalysis": true
+    },
+    "internal/ai/typesafe/client.go": {
+      "filePath": "internal/ai/typesafe/client.go",
+      "contentHash": "f71d3c9075adc0678830ac575c81010c80f8074a2b176c945833d6a4ab6b103d",
+      "functions": [
+        {
+          "name": "NewClient",
+          "owner": "",
+          "params": [
+            "apiKey"
+          ],
+          "returnType": "*Client",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "EvaluateBoundaryContinuity",
+          "owner": "Client",
+          "params": [
+            "preceding",
+            "cutCandidate",
+            "following"
+          ],
+          "returnType": "(isFluent bool, prob float64, err error)",
+          "exported": true,
+          "lineCount": 38
+        },
+        {
+          "name": "ClassifySegment",
+          "owner": "Client",
+          "params": [
+            "text",
+            "context"
+          ],
+          "returnType": "(reason models.CutReason, confidence float64, needsReview bool, err error)",
+          "exported": true,
+          "lineCount": 50
+        },
+        {
+          "name": "ScoreTitleHooks",
+          "owner": "Client",
+          "params": [
+            "titles",
+            "transcriptSummary"
+          ],
+          "returnType": "([]models.TitleOption, error)",
+          "exported": true,
+          "lineCount": 64
+        },
+        {
+          "name": "sendRequest",
+          "owner": "Client",
+          "params": [
+            "req"
+          ],
+          "returnType": "(*SystemOneResponse, error)",
+          "exported": false,
+          "lineCount": 36
+        }
+      ],
+      "classes": [
+        {
+          "name": "Client",
+          "methods": [
+            "EvaluateBoundaryContinuity",
+            "ClassifySegment",
+            "ScoreTitleHooks",
+            "sendRequest"
+          ],
+          "properties": [
+            "apiKey",
+            "model",
+            "httpClient"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SystemOneRequest",
+          "methods": [],
+          "properties": [
+            "State",
+            "Model",
+            "Questions"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "Question",
+          "methods": [],
+          "properties": [
+            "Type",
+            "Instructions",
+            "Criteria"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SystemOneResponse",
+          "methods": [],
+          "properties": [
+            "Model",
+            "Answers",
+            "Usage"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Answer",
+          "methods": [],
+          "properties": [
+            "Type",
+            "Noul",
+            "Choice",
+            "Score",
+            "Confidence",
+            "Probabilities"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "Client",
+        "NewClient",
+        "SystemOneRequest",
+        "Question",
+        "SystemOneResponse",
+        "Answer",
+        "EvaluateBoundaryContinuity",
+        "ClassifySegment",
+        "ScoreTitleHooks"
+      ],
+      "totalLines": 257,
+      "hasStructuralAnalysis": true
+    },
+    "internal/api/handlers.go": {
+      "filePath": "internal/api/handlers.go",
+      "contentHash": "6f852350e132d8f4d8757033579605050bf727c7fc43ba5a83541972a8ea4466",
+      "functions": [
+        {
+          "name": "NewServer",
+          "owner": "",
+          "params": [
+            "cfg",
+            "database",
+            "orch"
+          ],
+          "returnType": "*Server",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "ServeHTTP",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "routes",
+          "owner": "Server",
+          "params": [],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "handleCreateJob",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 58
+        },
+        {
+          "name": "handleAttachVo",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 54
+        },
+        {
+          "name": "handleAttachVideo",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "handleAutoCut",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "handleCaptions",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "handleListJobs",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "handleGetJob",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleSSE",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 50
+        },
+        {
+          "name": "handleGetTranscript",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleGetCutlist",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleUpdateCutlist",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "handleRenderJob",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "handleGetMetadata",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleDownload",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 78
+        },
+        {
+          "name": "handleCleanup",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "handleGetConfig",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "readUpload",
+          "owner": "",
+          "params": [
+            "r"
+          ],
+          "returnType": "(multipart.File, *multipart.FileHeader, error)",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "classifyUpload",
+          "owner": "",
+          "params": [
+            "filename"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "storeUpload",
+          "owner": "Server",
+          "params": [
+            "jobID",
+            "filename",
+            "src",
+            "kind"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "probeDuration",
+          "owner": "Server",
+          "params": [
+            "path"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "requireJob",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "returnType": "(*models.Job, bool)",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "writeJSON",
+          "owner": "",
+          "params": [
+            "w",
+            "status",
+            "payload"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "cutAudioPath",
+          "owner": "",
+          "params": [
+            "s",
+            "jobID",
+            "job"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "safeDownloadName",
+          "owner": "",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "handleSaveConfig",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "Server",
+          "methods": [
+            "ServeHTTP",
+            "routes",
+            "handleCreateJob",
+            "handleAttachVo",
+            "handleAttachVideo",
+            "handleAutoCut",
+            "handleCaptions",
+            "handleListJobs",
+            "handleGetJob",
+            "handleSSE",
+            "handleGetTranscript",
+            "handleGetCutlist",
+            "handleUpdateCutlist",
+            "handleRenderJob",
+            "handleGetMetadata",
+            "handleDownload",
+            "handleCleanup",
+            "handleGetConfig",
+            "storeUpload",
+            "probeDuration",
+            "requireJob",
+            "handleSaveConfig"
+          ],
+          "properties": [
+            "cfg",
+            "db",
+            "orchestrator",
+            "storageMgr",
+            "projects",
+            "renderer",
+            "tasks",
+            "token",
+            "mux",
+            "stateMu",
+            "exports",
+            "latest",
+            "analysis"
+          ],
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "mime/multipart",
+          "specifiers": [
+            "multipart"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/media",
+          "specifiers": [
+            "media"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "autocut/internal/pipeline",
+          "specifiers": [
+            "pipeline"
+          ]
+        },
+        {
+          "source": "autocut/internal/project",
+          "specifiers": [
+            "project"
+          ]
+        },
+        {
+          "source": "autocut/internal/render",
+          "specifiers": [
+            "render"
+          ]
+        },
+        {
+          "source": "autocut/internal/storage",
+          "specifiers": [
+            "storage"
+          ]
+        }
+      ],
+      "exports": [
+        "Server",
+        "NewServer",
+        "ServeHTTP"
+      ],
+      "totalLines": 735,
+      "hasStructuralAnalysis": true
+    },
+    "internal/api/handlers_test.go": {
+      "filePath": "internal/api/handlers_test.go",
+      "contentHash": "0fdf1f286e7c957abeae245843cec2b109f058c4239a2675dd1c481a8f2ed8c8",
+      "functions": [
+        {
+          "name": "TestUploadAudioAndVideoJobs",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 134
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "mime/multipart",
+          "specifiers": [
+            "multipart"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "autocut/internal/pipeline",
+          "specifiers": [
+            "pipeline"
+          ]
+        }
+      ],
+      "exports": [
+        "TestUploadAudioAndVideoJobs"
+      ],
+      "totalLines": 153,
+      "hasStructuralAnalysis": true
+    },
+    "internal/api/projects.go": {
+      "filePath": "internal/api/projects.go",
+      "contentHash": "2d507d83a8cc39d77b37362612a3b2fbc5764fd33c11d39f41b26ec738f1270c",
+      "functions": [
+        {
+          "name": "handleHealth",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "handleFonts",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "handleFontFile",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "handleListProjects",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "handleCreateProject",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "handleGetProject",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "handleRenameProject",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "handleDeleteProject",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "handleSaveTimeline",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 33
+        },
+        {
+          "name": "handleListAssets",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "handleImportAsset",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "handleImportAssetPath",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "handleDeleteAsset",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "handleAssetFile",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleAssetThumb",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "handleAssetWaveform",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleGetProjectTranscript",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "handleAnalyzeProject",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "handleLatestAnalysis",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleApplyCuts",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 50
+        },
+        {
+          "name": "handleGenerateCaptions",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 76
+        },
+        {
+          "name": "handleStartExport",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 108
+        },
+        {
+          "name": "handleExportEvents",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "handleAnalyzeEvents",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "streamTask",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r",
+            "kind"
+          ],
+          "exported": false,
+          "lineCount": 37
+        },
+        {
+          "name": "handleLatestExport",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "handleExportDownload",
+          "owner": "Server",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "attachLastExport",
+          "owner": "Server",
+          "params": [
+            "p"
+          ],
+          "returnType": "*models.Project",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "uniqueTrackID",
+          "owner": "",
+          "params": [
+            "tracks",
+            "base"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "exportFileName",
+          "owner": "",
+          "params": [
+            "requested",
+            "projectName"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 22
+        }
+      ],
+      "classes": [
+        {
+          "name": "analyzeRequest",
+          "methods": [],
+          "properties": [
+            "AssetID",
+            "UseAI",
+            "UseQA"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/captions",
+          "specifiers": [
+            "captions"
+          ]
+        },
+        {
+          "source": "autocut/internal/fonts",
+          "specifiers": [
+            "fonts"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "autocut/internal/pipeline",
+          "specifiers": [
+            "pipeline"
+          ]
+        },
+        {
+          "source": "autocut/internal/render",
+          "specifiers": [
+            "render"
+          ]
+        },
+        {
+          "source": "autocut/internal/timeline",
+          "specifiers": [
+            "timeline"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 716,
+      "hasStructuralAnalysis": true
+    },
+    "internal/api/tasks.go": {
+      "filePath": "internal/api/tasks.go",
+      "contentHash": "52618a76f2bb0a451dfe986f8bc7cbd4e69b4c3eb52da000fd76bcdb501445ae",
+      "functions": [
+        {
+          "name": "newTaskHub",
+          "owner": "",
+          "params": [],
+          "returnType": "*taskHub",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "taskKey",
+          "owner": "",
+          "params": [
+            "kind",
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "begin",
+          "owner": "taskHub",
+          "params": [
+            "kind",
+            "projectID",
+            "taskID"
+          ],
+          "returnType": "*taskHandle",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "current",
+          "owner": "taskHub",
+          "params": [
+            "kind",
+            "projectID"
+          ],
+          "returnType": "(TaskEvent, bool)",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "running",
+          "owner": "taskHub",
+          "params": [
+            "kind",
+            "projectID"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "subscribe",
+          "owner": "taskHub",
+          "params": [
+            "kind",
+            "projectID"
+          ],
+          "returnType": "(<-chan TaskEvent, func(), bool)",
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "publish",
+          "owner": "taskHandle",
+          "params": [
+            "mutate"
+          ],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "Update",
+          "owner": "taskHandle",
+          "params": [
+            "progress",
+            "message"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "Complete",
+          "owner": "taskHandle",
+          "params": [
+            "result"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "Fail",
+          "owner": "taskHandle",
+          "params": [
+            "err"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "TaskEvent",
+          "methods": [],
+          "properties": [
+            "Kind",
+            "TaskID",
+            "ProjectID",
+            "Status",
+            "Progress",
+            "Message",
+            "Error",
+            "Result"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "taskState",
+          "methods": [],
+          "properties": [
+            "event",
+            "subs",
+            "closed"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "taskHub",
+          "methods": [
+            "begin",
+            "current",
+            "running",
+            "subscribe"
+          ],
+          "properties": [
+            "mu",
+            "tasks"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "taskHandle",
+          "methods": [
+            "publish",
+            "Update",
+            "Complete",
+            "Fail"
+          ],
+          "properties": [
+            "hub",
+            "key",
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        }
+      ],
+      "exports": [
+        "TaskEvent",
+        "Update",
+        "Complete",
+        "Fail"
+      ],
+      "totalLines": 168,
+      "hasStructuralAnalysis": true
+    },
+    "internal/api/timeline_test.go": {
+      "filePath": "internal/api/timeline_test.go",
+      "contentHash": "6887f61f7f9477a3cca5bf7d243a22956de72a62742dbc253a9c04262b30652e",
+      "functions": [
+        {
+          "name": "newTimelineTestServer",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "returnType": "(*Server, *db.DB)",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "seedProject",
+          "owner": "",
+          "params": [
+            "t",
+            "database"
+          ],
+          "returnType": "*models.Project",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "TestSaveTimelineUpgradesV1Document",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 36
+        },
+        {
+          "name": "TestSaveTimelineRejectsDuplicateClipIDs",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 33
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "autocut/internal/pipeline",
+          "specifiers": [
+            "pipeline"
+          ]
+        }
+      ],
+      "exports": [
+        "TestSaveTimelineUpgradesV1Document",
+        "TestSaveTimelineRejectsDuplicateClipIDs"
+      ],
+      "totalLines": 139,
+      "hasStructuralAnalysis": true
+    },
+    "internal/captions/ass.go": {
+      "filePath": "internal/captions/ass.go",
+      "contentHash": "676fffc3d58a4ec0ce03dc5f4ac6a923a9942623c3a5fab3f6cb8c43f0e887f9",
+      "functions": [
+        {
+          "name": "DefaultTxShDStyle",
+          "owner": "",
+          "params": [],
+          "returnType": "SubtitleStyle",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "GenerateDynamicAssSubtitles",
+          "owner": "",
+          "params": [
+            "words",
+            "keepIntervals",
+            "outputPath",
+            "style"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 79
+        },
+        {
+          "name": "recalculateTimestamps",
+          "owner": "",
+          "params": [
+            "words",
+            "keepIntervals"
+          ],
+          "returnType": "[]models.WordTiming",
+          "exported": false,
+          "lineCount": 37
+        },
+        {
+          "name": "formatASSTime",
+          "owner": "",
+          "params": [
+            "sec"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "escapeASSText",
+          "owner": "",
+          "params": [
+            "text"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [
+        {
+          "name": "SubtitleStyle",
+          "methods": [],
+          "properties": [
+            "FontName",
+            "FontSize",
+            "PrimaryColor",
+            "HighlightColor",
+            "OutlineColor",
+            "Outline",
+            "Shadow",
+            "MarginV",
+            "Alignment"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "SubtitleStyle",
+        "DefaultTxShDStyle",
+        "GenerateDynamicAssSubtitles"
+      ],
+      "totalLines": 178,
+      "hasStructuralAnalysis": true
+    },
+    "internal/captions/ass_test.go": {
+      "filePath": "internal/captions/ass_test.go",
+      "contentHash": "1e7dfbf62ee0465cde16e6ba3739537f65afac26c90d99009bc2f94d2af80837",
+      "functions": [
+        {
+          "name": "TestRecalculateTimestamps",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "TestGenerateDynamicAssSubtitles",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 59
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "TestRecalculateTimestamps",
+        "TestGenerateDynamicAssSubtitles"
+      ],
+      "totalLines": 103,
+      "hasStructuralAnalysis": true
+    },
+    "internal/captions/generate.go": {
+      "filePath": "internal/captions/generate.go",
+      "contentHash": "4f98641eefdd8adae20929d9d0ad9ac20ccc083a0b1a56717907e7dbb8b900f2",
+      "functions": [
+        {
+          "name": "FromTranscript",
+          "owner": "",
+          "params": [
+            "clips",
+            "transcript",
+            "style"
+          ],
+          "returnType": "[]models.Clip",
+          "exported": true,
+          "lineCount": 53
+        },
+        {
+          "name": "chunkWords",
+          "owner": "",
+          "params": [
+            "words",
+            "wordsPerChunk"
+          ],
+          "returnType": "[]models.Clip",
+          "exported": false,
+          "lineCount": 50
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "FromTranscript"
+      ],
+      "totalLines": 119,
+      "hasStructuralAnalysis": true
+    },
+    "internal/config/config.go": {
+      "filePath": "internal/config/config.go",
+      "contentHash": "b79af74df324f8ec84e57efb64e2a494fac440fac0256fd01727cd909c2b7210",
+      "functions": [
+        {
+          "name": "LoadConfig",
+          "owner": "",
+          "params": [],
+          "returnType": "*Config",
+          "exported": true,
+          "lineCount": 64
+        },
+        {
+          "name": "SaveConfig",
+          "owner": "Config",
+          "params": [],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "Config",
+          "methods": [
+            "SaveConfig"
+          ],
+          "properties": [
+            "Port",
+            "FFmpegPath",
+            "DeepSeekAPIKey",
+            "TypeSafeAPIKey",
+            "GeminiAPIKey",
+            "WhisperCLIPath",
+            "WhisperModelPath",
+            "StorageDir",
+            "UseNVENC",
+            "MinSilenceDuration",
+            "SilenceNoiseThreshold",
+            "SafetyPaddingMs"
+          ],
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        }
+      ],
+      "exports": [
+        "Config",
+        "LoadConfig",
+        "SaveConfig"
+      ],
+      "totalLines": 97,
+      "hasStructuralAnalysis": true
+    },
+    "internal/db/db.go": {
+      "filePath": "internal/db/db.go",
+      "contentHash": "5a93ad8ffc9389b8fd7dc3ed26b0909b4bf51f5bc107fb80bfc400dcc4229d74",
+      "functions": [
+        {
+          "name": "InitDB",
+          "owner": "",
+          "params": [
+            "storageDir"
+          ],
+          "returnType": "(*DB, error)",
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "Close",
+          "owner": "DB",
+          "params": [],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "migrate",
+          "owner": "DB",
+          "params": [],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 104
+        },
+        {
+          "name": "scanJob",
+          "owner": "",
+          "params": [
+            "sc"
+          ],
+          "returnType": "(*models.Job, error)",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "CreateJob",
+          "owner": "DB",
+          "params": [
+            "job"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "GetJob",
+          "owner": "DB",
+          "params": [
+            "id"
+          ],
+          "returnType": "(*models.Job, error)",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "ListJobs",
+          "owner": "DB",
+          "params": [],
+          "returnType": "([]models.Job, error)",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "UpdateJobProgress",
+          "owner": "DB",
+          "params": [
+            "id",
+            "status",
+            "step",
+            "progress",
+            "message"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ClaimJob",
+          "owner": "DB",
+          "params": [
+            "id",
+            "expected",
+            "next",
+            "message"
+          ],
+          "returnType": "(bool, error)",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "UpdateJobVo",
+          "owner": "DB",
+          "params": [
+            "id",
+            "voPath",
+            "voFilename",
+            "audioOnly"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "UpdateJobVideo",
+          "owner": "DB",
+          "params": [
+            "id",
+            "rawPath",
+            "filename",
+            "videoDuration"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "UpdateJobDurations",
+          "owner": "DB",
+          "params": [
+            "id",
+            "original",
+            "video"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "MarkCutStale",
+          "owner": "DB",
+          "params": [
+            "id"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "ClearRenderedMedia",
+          "owner": "DB",
+          "params": [
+            "id"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "UpdateJobCutReady",
+          "owner": "DB",
+          "params": [
+            "id",
+            "cutPath",
+            "finalPath",
+            "audioPath",
+            "durOriginal",
+            "durFinal",
+            "savedPercent",
+            "videoDur"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "UpdateJobCaptioned",
+          "owner": "DB",
+          "params": [
+            "id",
+            "finalPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "UpdateJobError",
+          "owner": "DB",
+          "params": [
+            "id",
+            "errMsg"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SaveTranscript",
+          "owner": "DB",
+          "params": [
+            "t"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "GetTranscript",
+          "owner": "DB",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "(*models.Transcript, error)",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "SaveCutlist",
+          "owner": "DB",
+          "params": [
+            "c"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "GetCutlist",
+          "owner": "DB",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "(*models.Cutlist, error)",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "SaveMetadata",
+          "owner": "DB",
+          "params": [
+            "m"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "GetMetadata",
+          "owner": "DB",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "(*models.YouTubeMetadata, error)",
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [
+        {
+          "name": "DB",
+          "methods": [
+            "Close",
+            "migrate",
+            "CreateJob",
+            "GetJob",
+            "ListJobs",
+            "UpdateJobProgress",
+            "ClaimJob",
+            "UpdateJobVo",
+            "UpdateJobVideo",
+            "UpdateJobDurations",
+            "MarkCutStale",
+            "ClearRenderedMedia",
+            "UpdateJobCutReady",
+            "UpdateJobCaptioned",
+            "UpdateJobError",
+            "SaveTranscript",
+            "GetTranscript",
+            "SaveCutlist",
+            "GetCutlist",
+            "SaveMetadata",
+            "GetMetadata"
+          ],
+          "properties": [
+            "conn"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "rowScanner",
+          "methods": [
+            "Scan"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "database/sql",
+          "specifiers": [
+            "sql"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "modernc.org/sqlite",
+          "specifiers": [
+            "_"
+          ]
+        }
+      ],
+      "exports": [
+        "DB",
+        "InitDB",
+        "Close",
+        "CreateJob",
+        "GetJob",
+        "ListJobs",
+        "UpdateJobProgress",
+        "ClaimJob",
+        "UpdateJobVo",
+        "UpdateJobVideo",
+        "UpdateJobDurations",
+        "MarkCutStale",
+        "ClearRenderedMedia",
+        "UpdateJobCutReady",
+        "UpdateJobCaptioned",
+        "UpdateJobError",
+        "SaveTranscript",
+        "GetTranscript",
+        "SaveCutlist",
+        "GetCutlist",
+        "SaveMetadata",
+        "GetMetadata"
+      ],
+      "totalLines": 433,
+      "hasStructuralAnalysis": true
+    },
+    "internal/db/project.go": {
+      "filePath": "internal/db/project.go",
+      "contentHash": "a975ce9a6cb2a787d4b6dd42a9b9f57436ac721390f1d27b64a9c07e8774f465",
+      "functions": [
+        {
+          "name": "CreateProject",
+          "owner": "DB",
+          "params": [
+            "p"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "scanProject",
+          "owner": "",
+          "params": [
+            "sc"
+          ],
+          "returnType": "(*models.Project, error)",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "GetProject",
+          "owner": "DB",
+          "params": [
+            "id"
+          ],
+          "returnType": "(*models.Project, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "ListProjects",
+          "owner": "DB",
+          "params": [],
+          "returnType": "([]*models.Project, error)",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "UpdateProjectName",
+          "owner": "DB",
+          "params": [
+            "id",
+            "name"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "SaveTimeline",
+          "owner": "DB",
+          "params": [
+            "projectID",
+            "t"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "DeleteProject",
+          "owner": "DB",
+          "params": [
+            "id"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "SaveProjectTranscript",
+          "owner": "DB",
+          "params": [
+            "projectID",
+            "tr"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "GetProjectTranscript",
+          "owner": "DB",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "(*models.Transcript, error)",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "AddAsset",
+          "owner": "DB",
+          "params": [
+            "a"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "scanAsset",
+          "owner": "",
+          "params": [
+            "sc"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "ListAssets",
+          "owner": "DB",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "([]*models.Asset, error)",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "GetAsset",
+          "owner": "DB",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "DeleteAsset",
+          "owner": "DB",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "database/sql",
+          "specifiers": [
+            "sql"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "CreateProject",
+        "GetProject",
+        "ListProjects",
+        "UpdateProjectName",
+        "SaveTimeline",
+        "DeleteProject",
+        "SaveProjectTranscript",
+        "GetProjectTranscript",
+        "AddAsset",
+        "ListAssets",
+        "GetAsset",
+        "DeleteAsset"
+      ],
+      "totalLines": 172,
+      "hasStructuralAnalysis": true
+    },
+    "internal/fonts/bundled_test.go": {
+      "filePath": "internal/fonts/bundled_test.go",
+      "contentHash": "c94f0fdfab8f7acf02d0563e571a1f21f487972897336ee8a99e4bc229b8c4d0",
+      "functions": [
+        {
+          "name": "TestBundledFontsIndexed",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 47
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestBundledFontsIndexed"
+      ],
+      "totalLines": 55,
+      "hasStructuralAnalysis": true
+    },
+    "internal/fonts/fonts.go": {
+      "filePath": "internal/fonts/fonts.go",
+      "contentHash": "641df0c1b4855e851bb047f3718808194ea51f47528a6dffe44fbefc1f145a43",
+      "functions": [
+        {
+          "name": "NewIndex",
+          "owner": "",
+          "params": [],
+          "returnType": "*Index",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "BundledDir",
+          "owner": "",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "BundledFile",
+          "owner": "",
+          "params": [
+            "id"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "ExportBundled",
+          "owner": "",
+          "params": [
+            "dir"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 26
+        },
+        {
+          "name": "ExportFace",
+          "owner": "Index",
+          "params": [
+            "dir",
+            "family",
+            "bold",
+            "italic"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "fontDirs",
+          "owner": "",
+          "params": [],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "List",
+          "owner": "Index",
+          "params": [],
+          "returnType": "[]Font",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Find",
+          "owner": "Index",
+          "params": [
+            "family"
+          ],
+          "returnType": "(Font, bool)",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "ResolveFace",
+          "owner": "Index",
+          "params": [
+            "family",
+            "bold",
+            "italic"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 35
+        },
+        {
+          "name": "Resolve",
+          "owner": "Index",
+          "params": [
+            "family",
+            "explicitPath"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "loadLocked",
+          "owner": "Index",
+          "params": [],
+          "exported": false,
+          "lineCount": 44
+        },
+        {
+          "name": "loadBundledLocked",
+          "owner": "Index",
+          "params": [
+            "seen"
+          ],
+          "exported": false,
+          "lineCount": 39
+        },
+        {
+          "name": "addFontLocked",
+          "owner": "Index",
+          "params": [
+            "font",
+            "seen"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "isRegular",
+          "owner": "",
+          "params": [
+            "subfamily"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "readFontNames",
+          "owner": "",
+          "params": [
+            "path"
+          ],
+          "returnType": "(family, subfamily, fullName string)",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "readFontNamesAt",
+          "owner": "",
+          "params": [
+            "file"
+          ],
+          "returnType": "(family, subfamily, fullName string)",
+          "exported": false,
+          "lineCount": 47
+        },
+        {
+          "name": "parseNameTable",
+          "owner": "",
+          "params": [
+            "table"
+          ],
+          "returnType": "(family, subfamily, fullName string)",
+          "exported": false,
+          "lineCount": 65
+        },
+        {
+          "name": "decodeUTF16BE",
+          "owner": "",
+          "params": [
+            "raw"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "Font",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Family",
+            "Subfamily",
+            "FullName",
+            "Path",
+            "Source"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Index",
+          "methods": [
+            "ExportFace",
+            "List",
+            "Find",
+            "ResolveFace",
+            "Resolve",
+            "loadLocked",
+            "loadBundledLocked",
+            "addFontLocked"
+          ],
+          "properties": [
+            "mu",
+            "loaded",
+            "fonts",
+            "byFamily"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "embed",
+          "specifiers": [
+            "embed"
+          ]
+        },
+        {
+          "source": "encoding/binary",
+          "specifiers": [
+            "binary"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "unicode/utf16",
+          "specifiers": [
+            "utf16"
+          ]
+        }
+      ],
+      "exports": [
+        "Font",
+        "Index",
+        "NewIndex",
+        "BundledDir",
+        "BundledFile",
+        "ExportBundled",
+        "ExportFace",
+        "List",
+        "Find",
+        "ResolveFace",
+        "Resolve"
+      ],
+      "totalLines": 461,
+      "hasStructuralAnalysis": true
+    },
+    "internal/logger/logger.go": {
+      "filePath": "internal/logger/logger.go",
+      "contentHash": "8a343c22a45f7f5b23546a8138f7e55a397846ab07c92e88bef2a0b1220e9bea",
+      "functions": [
+        {
+          "name": "InitLogger",
+          "owner": "",
+          "params": [
+            "logDir"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 26
+        },
+        {
+          "name": "Info",
+          "owner": "",
+          "params": [
+            "format"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Warn",
+          "owner": "",
+          "params": [
+            "format"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Error",
+          "owner": "",
+          "params": [
+            "format"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Close",
+          "owner": "",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "InitLogger",
+        "Info",
+        "Warn",
+        "Error",
+        "Close"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "internal/media/ffmpeg.go": {
+      "filePath": "internal/media/ffmpeg.go",
+      "contentHash": "555d0bb9858ca28a6bb4dd1ffe49843f5e5fd07ec814bc73b35442614df8f0ee",
+      "functions": [
+        {
+          "name": "BinaryPath",
+          "owner": "FFmpeg",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "NewFFmpeg",
+          "owner": "",
+          "params": [
+            "binPath",
+            "useNVENC"
+          ],
+          "returnType": "*FFmpeg",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "ExtractAudio",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "audioPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "HasAudio",
+          "owner": "FFmpeg",
+          "params": [
+            "mediaPath"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "GetDuration",
+          "owner": "FFmpeg",
+          "params": [
+            "mediaPath"
+          ],
+          "returnType": "(float64, error)",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "DetectSilence",
+          "owner": "FFmpeg",
+          "params": [
+            "audioPath",
+            "noiseThreshold",
+            "minDuration"
+          ],
+          "returnType": "([]models.CutSegment, error)",
+          "exported": true,
+          "lineCount": 55
+        },
+        {
+          "name": "CutAndReencode",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "keepIntervals",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 39
+        },
+        {
+          "name": "buildCutFilter",
+          "owner": "",
+          "params": [
+            "keepIntervals"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "retryWithLibx264",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "filterComplex",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "CutVideoWithVO",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "voPath",
+            "keepIntervals",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 32
+        },
+        {
+          "name": "cutVideoWithVOLibx264",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "voPath",
+            "filter",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "buildVideoVOFilter",
+          "owner": "",
+          "params": [
+            "keepIntervals",
+            "voDuration"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 53
+        },
+        {
+          "name": "CutAudioOnly",
+          "owner": "FFmpeg",
+          "params": [
+            "audioPath",
+            "keepIntervals",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "buildAudioCutFilter",
+          "owner": "",
+          "params": [
+            "keepIntervals"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "BurnAssCaptions",
+          "owner": "FFmpeg",
+          "params": [
+            "videoPath",
+            "assPath",
+            "outputPath"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [
+        {
+          "name": "FFmpeg",
+          "methods": [
+            "BinaryPath",
+            "ExtractAudio",
+            "HasAudio",
+            "GetDuration",
+            "DetectSilence",
+            "CutAndReencode",
+            "retryWithLibx264",
+            "CutVideoWithVO",
+            "cutVideoWithVOLibx264",
+            "CutAudioOnly",
+            "BurnAssCaptions"
+          ],
+          "properties": [
+            "binPath",
+            "useNVENC"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "regexp",
+          "specifiers": [
+            "regexp"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "FFmpeg",
+        "BinaryPath",
+        "NewFFmpeg",
+        "ExtractAudio",
+        "HasAudio",
+        "GetDuration",
+        "DetectSilence",
+        "CutAndReencode",
+        "CutVideoWithVO",
+        "CutAudioOnly",
+        "BurnAssCaptions"
+      ],
+      "totalLines": 432,
+      "hasStructuralAnalysis": true
+    },
+    "internal/media/ffmpeg_filter_test.go": {
+      "filePath": "internal/media/ffmpeg_filter_test.go",
+      "contentHash": "884c349d47cc7107fe5625ecb3bfdae3b217c8b42dcc3ccd9c9456ba6c01fe53",
+      "functions": [
+        {
+          "name": "TestBuildVideoVOFilterKeepsPicturePastVO",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "TestBuildVideoVOFilterOneIntervalKeepsFullPicture",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TestBuildCutFilterSplitsSharedPads",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "TestCutVideoWithVOKeepsPicturePastVO",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "makeClip",
+          "owner": "",
+          "params": [
+            "t",
+            "bin"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "TestBuildAudioCutFilterSplitsSharedPad",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "TestBuildVideoVOFilterKeepsPicturePastVO",
+        "TestBuildVideoVOFilterOneIntervalKeepsFullPicture",
+        "TestBuildCutFilterSplitsSharedPads",
+        "TestCutVideoWithVOKeepsPicturePastVO",
+        "TestBuildAudioCutFilterSplitsSharedPad"
+      ],
+      "totalLines": 112,
+      "hasStructuralAnalysis": true
+    },
+    "internal/media/inspect.go": {
+      "filePath": "internal/media/inspect.go",
+      "contentHash": "66634b85420098a1d42ab9c9257f9e45cab7f5fd46e90f8876352e56b49911e1",
+      "functions": [
+        {
+          "name": "ffprobeBin",
+          "owner": "FFmpeg",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "Probe",
+          "owner": "FFmpeg",
+          "params": [
+            "path"
+          ],
+          "returnType": "(*ProbeInfo, error)",
+          "exported": true,
+          "lineCount": 58
+        },
+        {
+          "name": "parseFrameRate",
+          "owner": "",
+          "params": [
+            "value"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "CreateThumbnail",
+          "owner": "FFmpeg",
+          "params": [
+            "mediaPath",
+            "outputPath",
+            "isVideo"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "ComputeWaveform",
+          "owner": "FFmpeg",
+          "params": [
+            "mediaPath",
+            "outputPath",
+            "duration",
+            "buckets"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 68
+        },
+        {
+          "name": "roundPeak",
+          "owner": "",
+          "params": [
+            "sample"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "DetectVideoAudio",
+          "owner": "FFmpeg",
+          "params": [
+            "path"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "EnsureAssetKind",
+          "owner": "",
+          "params": [
+            "kind"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "ProbeInfo",
+          "methods": [],
+          "properties": [
+            "Duration",
+            "Width",
+            "Height",
+            "FPS",
+            "HasAudio",
+            "HasVideo",
+            "Size"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "probeOutput",
+          "methods": [],
+          "properties": [
+            "Format",
+            "Streams"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "Waveform",
+          "methods": [],
+          "properties": [
+            "Peaks",
+            "Duration"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "bufio",
+          "specifiers": [
+            "bufio"
+          ]
+        },
+        {
+          "source": "encoding/binary",
+          "specifiers": [
+            "binary"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "ProbeInfo",
+        "Probe",
+        "CreateThumbnail",
+        "Waveform",
+        "ComputeWaveform",
+        "DetectVideoAudio",
+        "EnsureAssetKind"
+      ],
+      "totalLines": 248,
+      "hasStructuralAnalysis": true
+    },
+    "internal/models/models.go": {
+      "filePath": "internal/models/models.go",
+      "contentHash": "02078f9956c06b0412ac4de588376073d337e807056ddd3c57d0339715fd497e",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Job",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Title",
+            "OriginalFilename",
+            "MediaType",
+            "RawVideoPath",
+            "VoPath",
+            "VoFilename",
+            "HasVo",
+            "AudioPath",
+            "CutVideoPath",
+            "FinalVideoPath",
+            "Status",
+            "CurrentStep",
+            "Progress",
+            "StatusMessage",
+            "ErrorMessage",
+            "DurationOriginal",
+            "VideoDuration",
+            "DurationFinal",
+            "TimeSavedPercent",
+            "CreatedAt",
+            "UpdatedAt"
+          ],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "WordTiming",
+          "methods": [],
+          "properties": [
+            "Word",
+            "Start",
+            "End",
+            "Confidence"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Transcript",
+          "methods": [],
+          "properties": [
+            "JobID",
+            "AssetID",
+            "FullText",
+            "Words",
+            "Duration",
+            "Language",
+            "Mock",
+            "CreatedAt"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "CutSegment",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Start",
+            "End",
+            "Duration",
+            "Reason",
+            "Source",
+            "Text",
+            "Confidence",
+            "NeedsReview",
+            "UserOverridden",
+            "IsCut"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "KeepInterval",
+          "methods": [],
+          "properties": [
+            "Start",
+            "End"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Cutlist",
+          "methods": [],
+          "properties": [
+            "JobID",
+            "Segments",
+            "KeepIntervals",
+            "TotalCutDuration",
+            "TotalKeepDuration",
+            "QASanityPassed",
+            "QAReport",
+            "UpdatedAt"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TitleOption",
+          "methods": [],
+          "properties": [
+            "Title",
+            "HookScore",
+            "Angle"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "Chapter",
+          "methods": [],
+          "properties": [
+            "Timestamp",
+            "Seconds",
+            "Title"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "YouTubeMetadata",
+          "methods": [],
+          "properties": [
+            "JobID",
+            "SuggestedTitles",
+            "Description",
+            "Chapters",
+            "Tags",
+            "UpdatedAt"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "PipelineProgressEvent",
+          "methods": [],
+          "properties": [
+            "JobID",
+            "Status",
+            "CurrentStep",
+            "TotalSteps",
+            "Progress",
+            "StatusMessage",
+            "ErrorMessage"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "Job",
+        "WordTiming",
+        "Transcript",
+        "CutSegment",
+        "KeepInterval",
+        "Cutlist",
+        "TitleOption",
+        "Chapter",
+        "YouTubeMetadata",
+        "PipelineProgressEvent"
+      ],
+      "totalLines": 150,
+      "hasStructuralAnalysis": true
+    },
+    "internal/models/project.go": {
+      "filePath": "internal/models/project.go",
+      "contentHash": "e67126b0b2ef8737ee25c1b233110ad0bf8100caccb2ff426237b3fd3472b1a6",
+      "functions": [
+        {
+          "name": "End",
+          "owner": "Clip",
+          "params": [],
+          "returnType": "float64",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "DefaultCaptionStyle",
+          "owner": "",
+          "params": [],
+          "returnType": "CaptionStyle",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "NewTimeline",
+          "owner": "",
+          "params": [
+            "width",
+            "height",
+            "fps"
+          ],
+          "returnType": "Timeline",
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "TimelineDuration",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "returnType": "float64",
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "Project",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Name",
+            "Width",
+            "Height",
+            "FPS",
+            "Timeline",
+            "HasTranscript",
+            "CreatedAt",
+            "UpdatedAt",
+            "LastExport"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "Asset",
+          "methods": [],
+          "properties": [
+            "ID",
+            "ProjectID",
+            "Kind",
+            "Filename",
+            "Path",
+            "Duration",
+            "Width",
+            "Height",
+            "FPS",
+            "HasAudio",
+            "ThumbPath",
+            "WaveformPath",
+            "Size",
+            "CreatedAt"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "Timeline",
+          "methods": [],
+          "properties": [
+            "Version",
+            "Width",
+            "Height",
+            "FPS",
+            "CaptionStyle",
+            "Tracks"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Track",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Kind",
+            "Name",
+            "Muted",
+            "Locked",
+            "Hidden",
+            "Height",
+            "Clips"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Clip",
+          "methods": [
+            "End"
+          ],
+          "properties": [
+            "ID",
+            "AssetID",
+            "Start",
+            "Duration",
+            "In",
+            "Out",
+            "Speed",
+            "LinkedID",
+            "X",
+            "Y",
+            "Scale",
+            "Rotation",
+            "Opacity",
+            "BlendMode",
+            "Text",
+            "Style",
+            "Volume",
+            "FadeIn",
+            "FadeOut",
+            "Words",
+            "Transition",
+            "Keyframes"
+          ],
+          "exported": true,
+          "lineCount": 38
+        },
+        {
+          "name": "TransformKeyframe",
+          "methods": [],
+          "properties": [
+            "Time",
+            "X",
+            "Y",
+            "Scale",
+            "Rotation"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Transition",
+          "methods": [],
+          "properties": [
+            "Type",
+            "Duration"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "TextStyle",
+          "methods": [],
+          "properties": [
+            "FontFamily",
+            "FontFile",
+            "FontSize",
+            "Bold",
+            "Italic",
+            "Color",
+            "StrokeWidth",
+            "StrokeColor",
+            "Shadow",
+            "ShadowColor",
+            "Align",
+            "Uppercase",
+            "BackgroundColor",
+            "BackgroundAlpha"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "CaptionStyle",
+          "methods": [],
+          "properties": [
+            "FontFamily",
+            "FontFile",
+            "FontSize",
+            "Bold",
+            "Italic",
+            "Color",
+            "HighlightColor",
+            "StrokeWidth",
+            "StrokeColor",
+            "Shadow",
+            "ShadowColor",
+            "Opacity",
+            "BlendMode",
+            "PositionY",
+            "Uppercase",
+            "Highlight",
+            "WordsPerChunk"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "ExportSettings",
+          "methods": [],
+          "properties": [
+            "Width",
+            "Height",
+            "FPS",
+            "Encoder",
+            "Quality",
+            "Filename"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "ExportJob",
+          "methods": [],
+          "properties": [
+            "ID",
+            "ProjectID",
+            "Settings",
+            "Status",
+            "Progress",
+            "Message",
+            "OutputPath",
+            "OutputName",
+            "Error",
+            "StartedAt",
+            "FinishedAt"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "AnalysisResult",
+          "methods": [],
+          "properties": [
+            "Transcript",
+            "Cuts",
+            "TotalCuts"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "Project",
+        "Asset",
+        "Timeline",
+        "Track",
+        "Clip",
+        "TransformKeyframe",
+        "Transition",
+        "End",
+        "TextStyle",
+        "CaptionStyle",
+        "ExportSettings",
+        "ExportJob",
+        "AnalysisResult",
+        "DefaultCaptionStyle",
+        "NewTimeline",
+        "TimelineDuration"
+      ],
+      "totalLines": 270,
+      "hasStructuralAnalysis": true
+    },
+    "internal/models/timeline.go": {
+      "filePath": "internal/models/timeline.go",
+      "contentHash": "27d0d4bb91552dcd1dba69eaed251274ab0b91c7cedf95e51364124172d47a51",
+      "functions": [
+        {
+          "name": "NormalizeTimeline",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 67
+        },
+        {
+          "name": "normalizeKeyframes",
+          "owner": "",
+          "params": [
+            "clip"
+          ],
+          "exported": false,
+          "lineCount": 44
+        },
+        {
+          "name": "normalizeTransition",
+          "owner": "",
+          "params": [
+            "clip"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "ValidateTimeline",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 62
+        },
+        {
+          "name": "validateClipNumbers",
+          "owner": "",
+          "params": [
+            "clip"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 49
+        },
+        {
+          "name": "validTrackKind",
+          "owner": "",
+          "params": [
+            "kind"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "TimelineOverlaps",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "returnType": "[]ClipOverlap",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "validateTransition",
+          "owner": "",
+          "params": [
+            "clip"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "validTransitionType",
+          "owner": "",
+          "params": [
+            "kind"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "clampFloat",
+          "owner": "",
+          "params": [
+            "v",
+            "min",
+            "max"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "defaultTrackName",
+          "owner": "",
+          "params": [
+            "kind"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "clampInt",
+          "owner": "",
+          "params": [
+            "v",
+            "min",
+            "max"
+          ],
+          "returnType": "int",
+          "exported": false,
+          "lineCount": 9
+        }
+      ],
+      "classes": [
+        {
+          "name": "ClipOverlap",
+          "methods": [],
+          "properties": [
+            "TrackID",
+            "FirstID",
+            "SecondID"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        }
+      ],
+      "exports": [
+        "NormalizeTimeline",
+        "ValidateTimeline",
+        "ClipOverlap",
+        "TimelineOverlaps"
+      ],
+      "totalLines": 381,
+      "hasStructuralAnalysis": true
+    },
+    "internal/models/timeline_test.go": {
+      "filePath": "internal/models/timeline_test.go",
+      "contentHash": "3d2433e9d07a8a73cff1824dabf968d27b80894f26bd77a9fa0aed397b5b3758",
+      "functions": [
+        {
+          "name": "TestNewTimelineIsCurrentVersion",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestNormalizeTimelineUpgradesV1",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 52
+        },
+        {
+          "name": "TestValidateTimelineRejectsBrokenDocuments",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 58
+        },
+        {
+          "name": "TestValidateTimelineTransitions",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "TestNormalizeTransitionRepairsValues",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "TestTimelineOverlapsFlagsOneTrackOnly",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestNormalizeTimelineFillsLegacyVideoTransform",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestNewTimelineIsCurrentVersion",
+        "TestNormalizeTimelineUpgradesV1",
+        "TestValidateTimelineRejectsBrokenDocuments",
+        "TestValidateTimelineTransitions",
+        "TestNormalizeTransitionRepairsValues",
+        "TestTimelineOverlapsFlagsOneTrackOnly",
+        "TestNormalizeTimelineFillsLegacyVideoTransform"
+      ],
+      "totalLines": 219,
+      "hasStructuralAnalysis": true
+    },
+    "internal/pipeline/analyze.go": {
+      "filePath": "internal/pipeline/analyze.go",
+      "contentHash": "80645be4677d8d578eec909f38cc9cfaf5f26c076595de63d0784e348cd32dc8",
+      "functions": [
+        {
+          "name": "AnalyzeVO",
+          "owner": "Orchestrator",
+          "params": [
+            "voPath",
+            "opts"
+          ],
+          "returnType": "(*models.AnalysisResult, error)",
+          "exported": true,
+          "lineCount": 73
+        },
+        {
+          "name": "proposalsToCuts",
+          "owner": "Orchestrator",
+          "params": [
+            "proposals",
+            "transcript"
+          ],
+          "returnType": "[]models.CutSegment",
+          "exported": false,
+          "lineCount": 51
+        }
+      ],
+      "classes": [
+        {
+          "name": "AnalyzeOptions",
+          "methods": [],
+          "properties": [
+            "TempDir",
+            "UseAI",
+            "UseQA",
+            "OnProgress"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "autocut/internal/ai/deepseek",
+          "specifiers": [
+            "deepseek"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "AnalyzeOptions",
+        "AnalyzeVO"
+      ],
+      "totalLines": 148,
+      "hasStructuralAnalysis": true
+    },
+    "internal/pipeline/orchestrator.go": {
+      "filePath": "internal/pipeline/orchestrator.go",
+      "contentHash": "4268ecb56946cafeec32bdf964d36dd2eef763087539d853f7f0a73fa5ab71c3",
+      "functions": [
+        {
+          "name": "NewOrchestrator",
+          "owner": "",
+          "params": [
+            "cfg",
+            "database"
+          ],
+          "returnType": "*Orchestrator",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "Subscribe",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "chan models.PipelineProgressEvent",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Unsubscribe",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID",
+            "ch"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "emitProgress",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID",
+            "status",
+            "step",
+            "total",
+            "progress",
+            "msg",
+            "errMsg"
+          ],
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "IsBusy",
+          "owner": "",
+          "params": [
+            "status"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "AutoCutBlockReason",
+          "owner": "",
+          "params": [
+            "job"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "CaptionsBlockReason",
+          "owner": "",
+          "params": [
+            "job",
+            "hasTranscript"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "RenderBlockReason",
+          "owner": "",
+          "params": [
+            "job",
+            "hasCutlist"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "RunAutoCut",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 170
+        },
+        {
+          "name": "RunAutoCaptions",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "RerenderCut",
+          "owner": "Orchestrator",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 71
+        },
+        {
+          "name": "CutTimeline",
+          "owner": "",
+          "params": [
+            "job"
+          ],
+          "returnType": "float64",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "clampKeeps",
+          "owner": "",
+          "params": [
+            "keeps",
+            "limit"
+          ],
+          "returnType": "[]models.KeepInterval",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "BuildCutlist",
+          "owner": "",
+          "params": [
+            "jobID",
+            "segments",
+            "totalDuration",
+            "paddingMs"
+          ],
+          "returnType": "*models.Cutlist",
+          "exported": true,
+          "lineCount": 90
+        }
+      ],
+      "classes": [
+        {
+          "name": "Orchestrator",
+          "methods": [
+            "Subscribe",
+            "Unsubscribe",
+            "emitProgress",
+            "RunAutoCut",
+            "RunAutoCaptions",
+            "RerenderCut"
+          ],
+          "properties": [
+            "cfg",
+            "db",
+            "ffmpeg",
+            "whisper",
+            "deepseek",
+            "typesafe",
+            "gemini",
+            "storageMgr",
+            "subscribersMu",
+            "subscribers"
+          ],
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/ai/deepseek",
+          "specifiers": [
+            "deepseek"
+          ]
+        },
+        {
+          "source": "autocut/internal/ai/gemini",
+          "specifiers": [
+            "gemini"
+          ]
+        },
+        {
+          "source": "autocut/internal/ai/typesafe",
+          "specifiers": [
+            "typesafe"
+          ]
+        },
+        {
+          "source": "autocut/internal/captions",
+          "specifiers": [
+            "captions"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/logger",
+          "specifiers": [
+            "logger"
+          ]
+        },
+        {
+          "source": "autocut/internal/media",
+          "specifiers": [
+            "media"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        },
+        {
+          "source": "autocut/internal/storage",
+          "specifiers": [
+            "storage"
+          ]
+        },
+        {
+          "source": "autocut/internal/stt",
+          "specifiers": [
+            "stt"
+          ]
+        }
+      ],
+      "exports": [
+        "Orchestrator",
+        "NewOrchestrator",
+        "Subscribe",
+        "Unsubscribe",
+        "IsBusy",
+        "AutoCutBlockReason",
+        "CaptionsBlockReason",
+        "RenderBlockReason",
+        "RunAutoCut",
+        "RunAutoCaptions",
+        "RerenderCut",
+        "CutTimeline",
+        "BuildCutlist"
+      ],
+      "totalLines": 595,
+      "hasStructuralAnalysis": true
+    },
+    "internal/pipeline/orchestrator_test.go": {
+      "filePath": "internal/pipeline/orchestrator_test.go",
+      "contentHash": "b85a85cc43f22b4d71f7510b1859b534eed8af6531c5b6effc632b2d71809c29",
+      "functions": [
+        {
+          "name": "TestBuildCutlist",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 65
+        },
+        {
+          "name": "TestBuildCutlistKeepsPictureAfterVO",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "TestCutTimelineUsesVideo",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestAutoCutBlockReasonRequiresVOForVideo",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 24
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "TestBuildCutlist",
+        "TestBuildCutlistKeepsPictureAfterVO",
+        "TestCutTimelineUsesVideo",
+        "TestAutoCutBlockReasonRequiresVOForVideo"
+      ],
+      "totalLines": 127,
+      "hasStructuralAnalysis": true
+    },
+    "internal/project/service.go": {
+      "filePath": "internal/project/service.go",
+      "contentHash": "c2fe0a4cfbc969ed7cd0067d2d418283ecbe53446ff3adf5e7e1a197e81c0cf9",
+      "functions": [
+        {
+          "name": "NewService",
+          "owner": "",
+          "params": [
+            "cfg",
+            "database"
+          ],
+          "returnType": "*Service",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "Fonts",
+          "owner": "Service",
+          "params": [],
+          "returnType": "*fonts.Index",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "FFmpeg",
+          "owner": "Service",
+          "params": [],
+          "returnType": "*media.FFmpeg",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "ProjectDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "assetsDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "thumbsDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "waveformsDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "CacheDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "ExportsDir",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Create",
+          "owner": "Service",
+          "params": [
+            "name",
+            "width",
+            "height",
+            "fps"
+          ],
+          "returnType": "(*models.Project, error)",
+          "exported": true,
+          "lineCount": 37
+        },
+        {
+          "name": "Get",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "(*models.Project, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Rename",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "name"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "List",
+          "owner": "Service",
+          "params": [],
+          "returnType": "([]*models.Project, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Delete",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "SaveTimeline",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "timeline"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "SaveTranscript",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "transcript"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Transcript",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "(*models.Transcript, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Assets",
+          "owner": "Service",
+          "params": [
+            "projectID"
+          ],
+          "returnType": "([]*models.Asset, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Asset",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Import",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "src",
+            "filename"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "ImportPath",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "sourcePath"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "finishImport",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "assetID",
+            "storedName",
+            "assetPath",
+            "kind",
+            "originalName"
+          ],
+          "returnType": "(*models.Asset, error)",
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "DeleteAsset",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "AssetThumbnail",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "AssetWaveform",
+          "owner": "Service",
+          "params": [
+            "projectID",
+            "assetID"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "ResolveFont",
+          "owner": "Service",
+          "params": [
+            "family",
+            "file"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "classifyMedia",
+          "owner": "",
+          "params": [
+            "filename"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "sanitizeFileName",
+          "owner": "",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 26
+        }
+      ],
+      "classes": [
+        {
+          "name": "Service",
+          "methods": [
+            "Fonts",
+            "FFmpeg",
+            "ProjectDir",
+            "assetsDir",
+            "thumbsDir",
+            "waveformsDir",
+            "CacheDir",
+            "ExportsDir",
+            "Create",
+            "Get",
+            "Rename",
+            "List",
+            "Delete",
+            "SaveTimeline",
+            "SaveTranscript",
+            "Transcript",
+            "Assets",
+            "Asset",
+            "Import",
+            "ImportPath",
+            "finishImport",
+            "DeleteAsset",
+            "AssetThumbnail",
+            "AssetWaveform",
+            "ResolveFont"
+          ],
+          "properties": [
+            "cfg",
+            "db",
+            "ffmpeg",
+            "fonts"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "database/sql",
+          "specifiers": [
+            "sql"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "autocut/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "autocut/internal/db",
+          "specifiers": [
+            "db"
+          ]
+        },
+        {
+          "source": "autocut/internal/fonts",
+          "specifiers": [
+            "fonts"
+          ]
+        },
+        {
+          "source": "autocut/internal/logger",
+          "specifiers": [
+            "logger"
+          ]
+        },
+        {
+          "source": "autocut/internal/media",
+          "specifiers": [
+            "media"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "Service",
+        "NewService",
+        "Fonts",
+        "FFmpeg",
+        "ProjectDir",
+        "CacheDir",
+        "ExportsDir",
+        "Create",
+        "Get",
+        "Rename",
+        "List",
+        "Delete",
+        "SaveTimeline",
+        "SaveTranscript",
+        "Transcript",
+        "Assets",
+        "Asset",
+        "Import",
+        "ImportPath",
+        "DeleteAsset",
+        "AssetThumbnail",
+        "AssetWaveform",
+        "ResolveFont"
+      ],
+      "totalLines": 319,
+      "hasStructuralAnalysis": true
+    },
+    "internal/render/captions.go": {
+      "filePath": "internal/render/captions.go",
+      "contentHash": "b26dd0b937f10d83035d5b33781e830ce1240c083da6ffb8fdd6b3c23a4dc3ac",
+      "functions": [
+        {
+          "name": "writeASS",
+          "owner": "",
+          "params": [
+            "path",
+            "clips",
+            "style",
+            "width",
+            "height"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 129
+        },
+        {
+          "name": "assColor",
+          "owner": "",
+          "params": [
+            "hex",
+            "alpha"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "parseHexColor",
+          "owner": "",
+          "params": [
+            "value"
+          ],
+          "returnType": "(int, int, int, bool)",
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "formatASSTime",
+          "owner": "",
+          "params": [
+            "sec"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "escapeASSText",
+          "owner": "",
+          "params": [
+            "text"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "clamp01",
+          "owner": "",
+          "params": [
+            "v"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 207,
+      "hasStructuralAnalysis": true
+    },
+    "internal/render/render.go": {
+      "filePath": "internal/render/render.go",
+      "contentHash": "77650b4ebbe364e2f3f73fffb66d7e01c1d98a1c44553e963c0cddfab662800b",
+      "functions": [
+        {
+          "name": "NewRenderer",
+          "owner": "",
+          "params": [
+            "ffmpeg",
+            "fontIndex"
+          ],
+          "returnType": "*Renderer",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Render",
+          "owner": "Renderer",
+          "params": [
+            "ctx",
+            "req"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 143
+        },
+        {
+          "name": "renderOverlay",
+          "owner": "Renderer",
+          "params": [
+            "ctx",
+            "clip",
+            "asset",
+            "width",
+            "height",
+            "cacheDir",
+            "index"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "renderImageOverlay",
+          "owner": "Renderer",
+          "params": [
+            "ctx",
+            "clip",
+            "asset",
+            "outPath",
+            "width",
+            "height"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "renderTextOverlay",
+          "owner": "Renderer",
+          "params": [
+            "ctx",
+            "clip",
+            "outPath",
+            "width",
+            "height",
+            "cacheDir",
+            "index"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 90
+        },
+        {
+          "name": "newGraphBuilder",
+          "owner": "",
+          "params": [],
+          "returnType": "*graphBuilder",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "add",
+          "owner": "graphBuilder",
+          "params": [
+            "format"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "input",
+          "owner": "graphBuilder",
+          "params": [
+            "key"
+          ],
+          "returnType": "int",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "nextLabel",
+          "owner": "graphBuilder",
+          "params": [],
+          "returnType": "int",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "labels",
+          "owner": "graphBuilder",
+          "params": [
+            "key",
+            "stream",
+            "index",
+            "count"
+          ],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "inputArgs",
+          "owner": "graphBuilder",
+          "params": [],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "buildVisual",
+          "owner": "",
+          "params": [
+            "b",
+            "tl",
+            "assets",
+            "overlayPaths",
+            "width",
+            "height",
+            "fps",
+            "total"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 85
+        },
+        {
+          "name": "clipKeyframes",
+          "owner": "",
+          "params": [
+            "clip"
+          ],
+          "returnType": "[]models.TransformKeyframe",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "keyframesDiffer",
+          "owner": "",
+          "params": [
+            "frames",
+            "pick"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "transformValueExpr",
+          "owner": "",
+          "params": [
+            "clip",
+            "base",
+            "pick"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "quoteOverlayExpr",
+          "owner": "",
+          "params": [
+            "expr"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "applyClipTransform",
+          "owner": "",
+          "params": [
+            "b",
+            "src",
+            "clip",
+            "width",
+            "height"
+          ],
+          "returnType": "(string, string, string)",
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "compositeLayer",
+          "owner": "",
+          "params": [
+            "b",
+            "base",
+            "src",
+            "clip",
+            "width",
+            "height",
+            "offsetX",
+            "offsetY"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 50
+        },
+        {
+          "name": "buildAudio",
+          "owner": "",
+          "params": [
+            "b",
+            "tl",
+            "assets",
+            "total"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 107
+        },
+        {
+          "name": "buildCaptions",
+          "owner": "",
+          "params": [
+            "tl",
+            "cacheDir",
+            "width",
+            "height"
+          ],
+          "returnType": "(string, bool, error)",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "collectClips",
+          "owner": "",
+          "params": [
+            "tl",
+            "kind"
+          ],
+          "returnType": "[]models.Clip",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "hasAudioTwin",
+          "owner": "",
+          "params": [
+            "clip",
+            "twins"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "clipSourceRange",
+          "owner": "",
+          "params": [
+            "clip",
+            "assetDuration"
+          ],
+          "returnType": "(float64, float64, bool)",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "sortClips",
+          "owner": "",
+          "params": [
+            "clips"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "normalizeBlendMode",
+          "owner": "",
+          "params": [
+            "mode"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "encoderArgs",
+          "owner": "",
+          "params": [
+            "encoder",
+            "quality"
+          ],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "runFFmpeg",
+          "owner": "",
+          "params": [
+            "ctx",
+            "bin",
+            "args",
+            "total",
+            "report"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "runSimple",
+          "owner": "",
+          "params": [
+            "ctx",
+            "bin",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "parseFFTime",
+          "owner": "",
+          "params": [
+            "value"
+          ],
+          "returnType": "(float64, error)",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "rotatedSize",
+          "owner": "",
+          "params": [
+            "w",
+            "h",
+            "angle"
+          ],
+          "returnType": "(float64, float64)",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "formatSeconds",
+          "owner": "",
+          "params": [
+            "value"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "escapeFilterValue",
+          "owner": "",
+          "params": [
+            "value"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "captionFontsDir",
+          "owner": "Renderer",
+          "params": [
+            "cacheDir",
+            "style"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "windowsFontsDir",
+          "owner": "",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "safeFileID",
+          "owner": "",
+          "params": [
+            "id"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "cleanupOldOverlayCache",
+          "owner": "",
+          "params": [
+            "cacheDir"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "hexDigits",
+          "owner": "",
+          "params": [
+            "value",
+            "fallback"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "wrapText",
+          "owner": "",
+          "params": [
+            "text",
+            "fontPx",
+            "maxWidth"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "estimateTextWidth",
+          "owner": "",
+          "params": [
+            "text",
+            "fontPx"
+          ],
+          "returnType": "float64",
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [
+        {
+          "name": "Renderer",
+          "methods": [
+            "Render",
+            "renderOverlay",
+            "renderImageOverlay",
+            "renderTextOverlay",
+            "captionFontsDir"
+          ],
+          "properties": [
+            "ffmpeg",
+            "fonts"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "RenderRequest",
+          "methods": [],
+          "properties": [
+            "Timeline",
+            "Assets",
+            "Settings",
+            "OutputPath",
+            "CacheDir",
+            "OnProgress"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "inputSpec",
+          "methods": [],
+          "properties": [
+            "args"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "graphBuilder",
+          "methods": [
+            "add",
+            "input",
+            "nextLabel",
+            "labels",
+            "inputArgs"
+          ],
+          "properties": [
+            "lines",
+            "inputs",
+            "indices",
+            "splits",
+            "labelSeq"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "audioPlan",
+          "methods": [],
+          "properties": [
+            "clip",
+            "asset",
+            "in",
+            "out"
+          ],
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "bufio",
+          "specifiers": [
+            "bufio"
+          ]
+        },
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/fonts",
+          "specifiers": [
+            "fonts"
+          ]
+        },
+        {
+          "source": "autocut/internal/media",
+          "specifiers": [
+            "media"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "Renderer",
+        "NewRenderer",
+        "RenderRequest",
+        "Render"
+      ],
+      "totalLines": 1050,
+      "hasStructuralAnalysis": true
+    },
+    "internal/render/render_test.go": {
+      "filePath": "internal/render/render_test.go",
+      "contentHash": "4653cfa2ed8ea728dcb3d50aa1a9a9d28e3ca4fd71573be07a1d54929c5cc76d",
+      "functions": [
+        {
+          "name": "makeColorVideo",
+          "owner": "",
+          "params": [
+            "t",
+            "dir",
+            "name",
+            "color",
+            "width",
+            "height"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "framePixel",
+          "owner": "",
+          "params": [
+            "t",
+            "video",
+            "dir",
+            "at",
+            "x",
+            "y"
+          ],
+          "returnType": "(uint8, uint8, uint8)",
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "renderStackedTimeline",
+          "owner": "",
+          "params": [
+            "t",
+            "topHidden",
+            "topW",
+            "topH",
+            "topStart"
+          ],
+          "returnType": "(string, string)",
+          "exported": false,
+          "lineCount": 47
+        },
+        {
+          "name": "TestRenderUpperVideoTrackCoversBase",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "TestRenderHiddenVideoTrackIsSkipped",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "TestRenderUpperLayerKeepsBaseAroundPortrait",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestRenderUpperLayerRespectsStartTime",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestRenderSlideTransitionStartsOffscreen",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "TestRenderVideoClipKeepsBuiltInAudio",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 56
+        },
+        {
+          "name": "TestRenderPullInTransitionFadesIn",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "renderClipTimeline",
+          "owner": "",
+          "params": [
+            "t",
+            "clip"
+          ],
+          "returnType": "(string, string)",
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "TestRenderStaticTransformMovesAndScalesLayer",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "TestRenderKeyframedPositionInterpolates",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "brightPixelsIn",
+          "owner": "",
+          "params": [
+            "t",
+            "video",
+            "dir",
+            "name",
+            "at",
+            "minX",
+            "minY",
+            "maxX",
+            "maxY"
+          ],
+          "returnType": "int",
+          "exported": false,
+          "lineCount": 31
+        },
+        {
+          "name": "TestRenderTextOverlayPositionScaleAndBundledFont",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 48
+        },
+        {
+          "name": "TestRenderOverlayTrackSitsAboveDefaultVideoTrack",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 48
+        },
+        {
+          "name": "TestCaptionFontsDirIncludesBundledFace",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestRenderCaptionsUseBundledFont",
+          "owner": "",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 44
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "image/png",
+          "specifiers": [
+            "png"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "autocut/internal/fonts",
+          "specifiers": [
+            "fonts"
+          ]
+        },
+        {
+          "source": "autocut/internal/media",
+          "specifiers": [
+            "media"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "TestRenderUpperVideoTrackCoversBase",
+        "TestRenderHiddenVideoTrackIsSkipped",
+        "TestRenderUpperLayerKeepsBaseAroundPortrait",
+        "TestRenderUpperLayerRespectsStartTime",
+        "TestRenderSlideTransitionStartsOffscreen",
+        "TestRenderVideoClipKeepsBuiltInAudio",
+        "TestRenderPullInTransitionFadesIn",
+        "TestRenderStaticTransformMovesAndScalesLayer",
+        "TestRenderKeyframedPositionInterpolates",
+        "TestRenderTextOverlayPositionScaleAndBundledFont",
+        "TestRenderOverlayTrackSitsAboveDefaultVideoTrack",
+        "TestCaptionFontsDirIncludesBundledFace",
+        "TestRenderCaptionsUseBundledFont"
+      ],
+      "totalLines": 552,
+      "hasStructuralAnalysis": true
+    },
+    "internal/storage/cleaner.go": {
+      "filePath": "internal/storage/cleaner.go",
+      "contentHash": "ce5b30cedfd13ef2ac2f3d11179addc8019d499eda9ae585293c1c06929cb5b7",
+      "functions": [
+        {
+          "name": "NewStorageManager",
+          "owner": "",
+          "params": [
+            "baseDir"
+          ],
+          "returnType": "*StorageManager",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "GetTempDir",
+          "owner": "StorageManager",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "GetArchiveDir",
+          "owner": "StorageManager",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ArchiveEssentialAssets",
+          "owner": "StorageManager",
+          "params": [
+            "jobID",
+            "audioSourcePath",
+            "transcript",
+            "cutlist",
+            "meta"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "CleanupEphemeralFiles",
+          "owner": "StorageManager",
+          "params": [
+            "jobID"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "copyFile",
+          "owner": "",
+          "params": [
+            "src",
+            "dst"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [
+        {
+          "name": "StorageManager",
+          "methods": [
+            "GetTempDir",
+            "GetArchiveDir",
+            "ArchiveEssentialAssets",
+            "CleanupEphemeralFiles"
+          ],
+          "properties": [
+            "baseDir"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "StorageManager",
+        "NewStorageManager",
+        "GetTempDir",
+        "GetArchiveDir",
+        "ArchiveEssentialAssets",
+        "CleanupEphemeralFiles"
+      ],
+      "totalLines": 88,
+      "hasStructuralAnalysis": true
+    },
+    "internal/stt/whisper.go": {
+      "filePath": "internal/stt/whisper.go",
+      "contentHash": "dfb7a8783794b6a099318bba0f6e301166a84cc77512ea3bf60cd97ab8812856",
+      "functions": [
+        {
+          "name": "NewWhisperRunner",
+          "owner": "",
+          "params": [
+            "cliPath",
+            "modelPath"
+          ],
+          "returnType": "*WhisperRunner",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Transcribe",
+          "owner": "WhisperRunner",
+          "params": [
+            "audioPath",
+            "totalDuration"
+          ],
+          "returnType": "(*models.Transcript, error)",
+          "exported": true,
+          "lineCount": 75
+        },
+        {
+          "name": "generateDevFallbackTranscript",
+          "owner": "",
+          "params": [
+            "audioPath",
+            "duration"
+          ],
+          "returnType": "(*models.Transcript, error)",
+          "exported": false,
+          "lineCount": 37
+        }
+      ],
+      "classes": [
+        {
+          "name": "WhisperRunner",
+          "methods": [
+            "Transcribe"
+          ],
+          "properties": [
+            "cliPath",
+            "modelPath"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "WhisperOutputJSON",
+          "methods": [],
+          "properties": [
+            "Transcription"
+          ],
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "WhisperRunner",
+        "NewWhisperRunner",
+        "WhisperOutputJSON",
+        "Transcribe"
+      ],
+      "totalLines": 168,
+      "hasStructuralAnalysis": true
+    },
+    "internal/timeline/edit.go": {
+      "filePath": "internal/timeline/edit.go",
+      "contentHash": "8edf3d2f453ca0a5e09a05bd46fc7ec089229ae548e4d7c289c07d3eb9839a9c",
+      "functions": [
+        {
+          "name": "ApplyCuts",
+          "owner": "",
+          "params": [
+            "tl",
+            "clipIDs",
+            "cuts",
+            "ripple"
+          ],
+          "returnType": "float64",
+          "exported": true,
+          "lineCount": 67
+        },
+        {
+          "name": "SplitClipAt",
+          "owner": "",
+          "params": [
+            "tl",
+            "clipID",
+            "at",
+            "newID"
+          ],
+          "returnType": "(string, string, bool)",
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "keepIntervals",
+          "owner": "",
+          "params": [
+            "in",
+            "out",
+            "cuts"
+          ],
+          "returnType": "[][2]float64",
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "mergeCuts",
+          "owner": "",
+          "params": [
+            "cuts",
+            "in",
+            "out"
+          ],
+          "returnType": "[][2]float64",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "sortClips",
+          "owner": "",
+          "params": [
+            "clips"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        },
+        {
+          "source": "autocut/internal/models",
+          "specifiers": [
+            "models"
+          ]
+        }
+      ],
+      "exports": [
+        "ApplyCuts",
+        "SplitClipAt"
+      ],
+      "totalLines": 173,
+      "hasStructuralAnalysis": true
+    },
+    "package.json": {
+      "filePath": "package.json",
+      "contentHash": "cd515bb24d0ac604a98098d7daba3b44870e3175d24d3002fe9a8944623bd376",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": false
+    },
+    "run.bat": {
+      "filePath": "run.bat",
+      "contentHash": "bfb97adfb12628967a9ce3fd8fd289d285aa38eb88144f00955cac26ac10b210",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": false
+    },
+    "scripts/build-sidecar.mjs": {
+      "filePath": "scripts/build-sidecar.mjs",
+      "contentHash": "b105087942ff4eadabd3cef50036e970c5ca93f0e388ffc02a4c6ac3da39e86f",
+      "functions": [
+        {
+          "name": "hostTriple",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "execFileSync"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "mkdirSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "join",
+            "resolve"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 39,
+      "hasStructuralAnalysis": true
+    },
+    "src-tauri/Cargo.toml": {
+      "filePath": "src-tauri/Cargo.toml",
+      "contentHash": "bcd61349f6a0d0018bab8d777cf86edfb1e3153ae8ce1c38e535d5eca5d3dfb8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": false
+    },
+    "src-tauri/build.rs": {
+      "filePath": "src-tauri/build.rs",
+      "contentHash": "487059eaf8a947b80f20a9aacac038a5047b2ad69d2401b827376c67d6fe847f",
+      "functions": [
+        {
+          "name": "main",
+          "owner": "",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "src-tauri/capabilities/default.json": {
+      "filePath": "src-tauri/capabilities/default.json",
+      "contentHash": "4cf9b3a390c4c3f2a9ebafaffe996a8765d6b36d16058c5f789cacbe85a0a4d8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": false
+    },
+    "src-tauri/src/lib.rs": {
+      "filePath": "src-tauri/src/lib.rs",
+      "contentHash": "7270d5aa509eaf1ba91067dca87bc1db69128fd3a99f3690dfbcb525d54df4c0",
+      "functions": [
+        {
+          "name": "api_info",
+          "owner": "",
+          "params": [
+            "info"
+          ],
+          "returnType": "ApiInfo",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "reveal_export",
+          "owner": "",
+          "params": [
+            "app",
+            "project_id",
+            "output_name"
+          ],
+          "returnType": "Result<(), String>",
+          "exported": false,
+          "lineCount": 46
+        },
+        {
+          "name": "free_port",
+          "owner": "",
+          "params": [],
+          "returnType": "u16",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "random_token",
+          "owner": "",
+          "params": [],
+          "returnType": "String",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "data_dir",
+          "owner": "",
+          "params": [
+            "app"
+          ],
+          "returnType": "PathBuf",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "stop_sidecar",
+          "owner": "",
+          "params": [
+            "app"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "run",
+          "owner": "",
+          "params": [],
+          "exported": true,
+          "lineCount": 72
+        }
+      ],
+      "classes": [
+        {
+          "name": "ApiInfo",
+          "methods": [],
+          "properties": [
+            "base_url",
+            "token"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "SidecarState",
+          "methods": [],
+          "properties": [],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "std::net",
+          "specifiers": [
+            "TcpListener"
+          ]
+        },
+        {
+          "source": "std::path",
+          "specifiers": [
+            "PathBuf"
+          ]
+        },
+        {
+          "source": "std::sync",
+          "specifiers": [
+            "Mutex"
+          ]
+        },
+        {
+          "source": "rand",
+          "specifiers": [
+            "RngCore"
+          ]
+        },
+        {
+          "source": "serde",
+          "specifiers": [
+            "Serialize"
+          ]
+        },
+        {
+          "source": "tauri",
+          "specifiers": [
+            "Manager",
+            "RunEvent"
+          ]
+        },
+        {
+          "source": "tauri_plugin_shell::process",
+          "specifiers": [
+            "CommandChild",
+            "CommandEvent"
+          ]
+        },
+        {
+          "source": "tauri_plugin_shell",
+          "specifiers": [
+            "ShellExt"
+          ]
+        }
+      ],
+      "exports": [
+        "run"
+      ],
+      "totalLines": 174,
+      "hasStructuralAnalysis": true
+    },
+    "src-tauri/src/main.rs": {
+      "filePath": "src-tauri/src/main.rs",
+      "contentHash": "b3866f93f2f13a2a8734a8e275a873ac2697653cdd350feb34faaa8508d36c65",
+      "functions": [
+        {
+          "name": "main",
+          "owner": "",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "src-tauri/tauri.conf.json": {
+      "filePath": "src-tauri/tauri.conf.json",
+      "contentHash": "5d9f0b3e42569c0c901a5b36798dc57f9c63566ff52c06ce73b37149a751f93a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": false
+    },
+    "technical.md": {
+      "filePath": "technical.md",
+      "contentHash": "d0d1b0d289ed324ce052f6506329a06755e768e191405d2cfb5744ca1b645a84",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 394,
+      "hasStructuralAnalysis": false
+    },
+    "web/index.html": {
+      "filePath": "web/index.html",
+      "contentHash": "913e3a0aa0b6e736e5d4a7454c2e7001bad6f69d49c8c1e5ac30bf888317943c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": false
+    },
+    "web/package.json": {
+      "filePath": "web/package.json",
+      "contentHash": "2834d5751eabd67fc03103ebc65fdb21152163f0225ea9928fa471c558558bc6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/App.vue": {
+      "filePath": "web/src/App.vue",
+      "contentHash": "d3a53ec576690cfbef7f69dd5da20cf180e6789fbcf8457d3d9f5a3a5be45aaf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 359,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/api.ts": {
+      "filePath": "web/src/api.ts",
+      "contentHash": "d7deea5dc9f1fd3c5595fc6061edfad80e3d3809e86bc350ec67a7ad959b791e",
+      "functions": [
+        {
+          "name": "isTauri",
+          "params": [],
+          "returnType": "boolean",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "initApi",
+          "params": [],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "apiBaseUrl",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "apiToken",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "waitForServer",
+          "params": [
+            "timeoutMs"
+          ],
+          "returnType": "Promise<Health>",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "url",
+          "params": [
+            "path",
+            "extra"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "request",
+          "params": [
+            "path",
+            "options"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "assetUrl",
+          "params": [
+            "projectId",
+            "assetId"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "thumbUrl",
+          "params": [
+            "projectId",
+            "assetId"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "waveformUrl",
+          "params": [
+            "projectId",
+            "assetId"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "fontFileUrl",
+          "params": [
+            "fontId"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "exportDownloadUrl",
+          "params": [
+            "projectId",
+            "exportId",
+            "play"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "revealExport",
+          "params": [
+            "projectId",
+            "outputName"
+          ],
+          "returnType": "Promise<boolean>",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "subscribeTask",
+          "params": [
+            "kind",
+            "projectId",
+            "onEvent"
+          ],
+          "returnType": "() => void",
+          "exported": true,
+          "lineCount": 37
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@tauri-apps/api/core",
+          "specifiers": [
+            "invoke"
+          ]
+        },
+        {
+          "source": "./types",
+          "specifiers": [
+            "AnalysisResult",
+            "Asset",
+            "ExportJob",
+            "ExportSettings",
+            "Font",
+            "Health",
+            "Project",
+            "TaskEvent",
+            "Timeline",
+            "Transcript"
+          ]
+        }
+      ],
+      "exports": [
+        "initApi",
+        "apiBaseUrl",
+        "apiToken",
+        "waitForServer",
+        "api",
+        "assetUrl",
+        "thumbUrl",
+        "waveformUrl",
+        "fontFileUrl",
+        "exportDownloadUrl",
+        "revealExport",
+        "subscribeTask"
+      ],
+      "totalLines": 216,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/components/AutoCutDialog.vue": {
+      "filePath": "web/src/components/AutoCutDialog.vue",
+      "contentHash": "6da2c8fa6a29da677e41093572be742292772a357ea844d78641994bc48e55c2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 438,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/CaptionPreview.vue": {
+      "filePath": "web/src/components/CaptionPreview.vue",
+      "contentHash": "f3116ea87eedc37755a8829bfcd09c2f2c7a3a4518090f6034c8dd8333c83d68",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 108,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/ExportDialog.vue": {
+      "filePath": "web/src/components/ExportDialog.vue",
+      "contentHash": "c47fffd9f9f92db90702c6351463c6498cab801df47dfafb4bdd86a27cd77e62",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 395,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/FontPicker.vue": {
+      "filePath": "web/src/components/FontPicker.vue",
+      "contentHash": "93486e2c234e68ad2b09259f7b8b4381e93ab600e080d28ba8e2e41b83dfe281",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 345,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/MediaPanel.vue": {
+      "filePath": "web/src/components/MediaPanel.vue",
+      "contentHash": "f4f38b337f65816ec101ad95e050951b1575fed3e84bbf44efe2e85ecbd740c5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 650,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/OverlayPreview.vue": {
+      "filePath": "web/src/components/OverlayPreview.vue",
+      "contentHash": "2cfaade183d2f686ededa2b9259807c3103ba42869c0c0cb416ea42634a05112",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 339,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/PlayheadMarker.vue": {
+      "filePath": "web/src/components/PlayheadMarker.vue",
+      "contentHash": "24310c1c7678fca8f19352191806f3c8b4b16ae2d22fd35cfd035ded84d996dd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 55,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/PreviewStage.vue": {
+      "filePath": "web/src/components/PreviewStage.vue",
+      "contentHash": "2d7fbad3c412292877e7ab95a84641a2d5c6693f5bf138d413c25fd936573688",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 835,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/ProjectLauncher.vue": {
+      "filePath": "web/src/components/ProjectLauncher.vue",
+      "contentHash": "f9a10ba19d5c7c9edfeb63cfa0375799ca8f5e4c3691382f47977047c2204323",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 531,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/PropertiesPanel.vue": {
+      "filePath": "web/src/components/PropertiesPanel.vue",
+      "contentHash": "04cf6b0eae87fb0999fb186b0d8957c8193a7e94b73d03b789dd7302cf387ec8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 945,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/TimelinePanel.vue": {
+      "filePath": "web/src/components/TimelinePanel.vue",
+      "contentHash": "9f008be0b4d7b48cad8c9a5a45e3eca7d65c229d72f9915cc8be9211eba02305",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1695,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/ToastHost.vue": {
+      "filePath": "web/src/components/ToastHost.vue",
+      "contentHash": "39c78b1b5313bf997e2731998cf9086775986109cb2f1e939e18bf71a81d2974",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 72,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/TopBar.vue": {
+      "filePath": "web/src/components/TopBar.vue",
+      "contentHash": "a51ac559cd832aa3bfa06739403549086a5c0389651f56bc7145ee111feeba09",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 234,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/components/Waveform.vue": {
+      "filePath": "web/src/components/Waveform.vue",
+      "contentHash": "c3dd401485902b9b4b24a824c5f1080d02c084759025ba9a3c2b5afae5fd7d5e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 116,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/env.d.ts": {
+      "filePath": "web/src/env.d.ts",
+      "contentHash": "ad06fd520a7f6dec306698e8d1152baffac2ad21ad2a58fb28aaf46e0f52c625",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/lib/fonts.ts": {
+      "filePath": "web/src/lib/fonts.ts",
+      "contentHash": "3f47f895ea1c7d98a78060c2038907f2270053255fa42530ddbdd38f199f1ffc",
+      "functions": [
+        {
+          "name": "isBoldFace",
+          "params": [
+            "font"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "applyBundledFonts",
+          "params": [
+            "fonts"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../api",
+          "specifiers": [
+            "fontFileUrl"
+          ]
+        },
+        {
+          "source": "../types",
+          "specifiers": [
+            "Font"
+          ]
+        }
+      ],
+      "exports": [
+        "isBoldFace",
+        "applyBundledFonts"
+      ],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/lib/format.ts": {
+      "filePath": "web/src/lib/format.ts",
+      "contentHash": "2d89c7c4775403ba34e340bfdad4d0560e0efe733a5c07c619b609262e7542ae",
+      "functions": [
+        {
+          "name": "clamp",
+          "params": [
+            "value",
+            "min",
+            "max"
+          ],
+          "returnType": "number",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "formatTime",
+          "params": [
+            "seconds"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "formatSecondsShort",
+          "params": [
+            "seconds"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "timecode",
+          "params": [
+            "seconds",
+            "fps"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "formatBytes",
+          "params": [
+            "bytes"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "snapTime",
+          "params": [
+            "value",
+            "candidates",
+            "threshold"
+          ],
+          "returnType": "number",
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "clamp",
+        "formatTime",
+        "formatSecondsShort",
+        "timecode",
+        "formatBytes",
+        "snapTime"
+      ],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/lib/transform.ts": {
+      "filePath": "web/src/lib/transform.ts",
+      "contentHash": "42546d179f9d1a372fb392241155dc4a9aec81f5514710c09743427be8a440aa",
+      "functions": [
+        {
+          "name": "clampTransform",
+          "params": [
+            "value",
+            "min",
+            "max"
+          ],
+          "returnType": "number",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "baseTransform",
+          "params": [
+            "clip"
+          ],
+          "returnType": "TransformValue",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "sortedKeyframes",
+          "params": [
+            "clip"
+          ],
+          "returnType": "TransformKeyframe[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "frameValue",
+          "params": [
+            "frame"
+          ],
+          "returnType": "TransformValue",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "lerp",
+          "params": [
+            "a",
+            "b",
+            "t"
+          ],
+          "returnType": "number",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "transformAt",
+          "params": [
+            "clip",
+            "timelineTime"
+          ],
+          "returnType": "TransformValue",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "keyframeAt",
+          "params": [
+            "clip",
+            "timelineTime",
+            "epsilon"
+          ],
+          "returnType": "TransformKeyframe | null",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "hasTransformAnimation",
+          "params": [
+            "clip"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "upsertTransformKeyframe",
+          "params": [
+            "clip",
+            "timelineTime",
+            "value",
+            "epsilon"
+          ],
+          "returnType": "TransformKeyframe[]",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "removeTransformKeyframe",
+          "params": [
+            "clip",
+            "timelineTime",
+            "epsilon"
+          ],
+          "returnType": "TransformKeyframe[]",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "isDefaultTransform",
+          "params": [
+            "value"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../types",
+          "specifiers": [
+            "Clip",
+            "TransformKeyframe"
+          ]
+        }
+      ],
+      "exports": [
+        "KEYFRAME_EPSILON",
+        "MIN_CLIP_SCALE",
+        "MAX_CLIP_SCALE",
+        "clampTransform",
+        "baseTransform",
+        "sortedKeyframes",
+        "transformAt",
+        "keyframeAt",
+        "hasTransformAnimation",
+        "upsertTransformKeyframe",
+        "removeTransformKeyframe",
+        "isDefaultTransform"
+      ],
+      "totalLines": 113,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/main.ts": {
+      "filePath": "web/src/main.ts",
+      "contentHash": "8336bcd46e5cdaf2176d2fe96594be53318bc4e6e3c1a172d190622a48468dec",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vue",
+          "specifiers": [
+            "createApp"
+          ]
+        },
+        {
+          "source": "pinia",
+          "specifiers": [
+            "createPinia"
+          ]
+        },
+        {
+          "source": "./App.vue",
+          "specifiers": [
+            "App"
+          ]
+        },
+        {
+          "source": "./styles.css",
+          "specifiers": []
+        }
+      ],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/stores/editor.ts": {
+      "filePath": "web/src/stores/editor.ts",
+      "contentHash": "d241adc2084bb43f31bc14b9acdaa8d75a34a9fd0ced1a172b37e8ef348eecc4",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vue",
+          "specifiers": [
+            "computed",
+            "ref"
+          ]
+        },
+        {
+          "source": "pinia",
+          "specifiers": [
+            "defineStore"
+          ]
+        },
+        {
+          "source": "../api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "../lib/fonts",
+          "specifiers": [
+            "applyBundledFonts"
+          ]
+        },
+        {
+          "source": "../lib/transform",
+          "specifiers": [
+            "clampTransform",
+            "hasTransformAnimation",
+            "keyframeAt",
+            "MAX_CLIP_SCALE",
+            "MIN_CLIP_SCALE",
+            "removeTransformKeyframe",
+            "transformAt",
+            "upsertTransformKeyframe",
+            "TransformValue"
+          ]
+        },
+        {
+          "source": "../types",
+          "specifiers": [
+            "DEFAULT_TRANSITION_DURATION",
+            "defaultClip",
+            "defaultTextStyle",
+            "AnalysisResult",
+            "Asset",
+            "CaptionStyle",
+            "Clip",
+            "Font",
+            "Project",
+            "Timeline",
+            "Track",
+            "TrackKind",
+            "TransitionType"
+          ]
+        }
+      ],
+      "exports": [
+        "useEditor"
+      ],
+      "totalLines": 1245,
+      "hasStructuralAnalysis": true
+    },
+    "web/src/styles.css": {
+      "filePath": "web/src/styles.css",
+      "contentHash": "c989337768addf63c1a54b0312553f83786dab0c1e9526947b9923343cdede36",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 500,
+      "hasStructuralAnalysis": false
+    },
+    "web/src/types.ts": {
+      "filePath": "web/src/types.ts",
+      "contentHash": "ec96cdf21097060261fce8f9be74bbd66576a812c6f9599d6a87cfb0e56db386",
+      "functions": [
+        {
+          "name": "blendCSS",
+          "params": [
+            "mode"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "defaultTextStyle",
+          "params": [],
+          "returnType": "TextStyle",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "defaultClip",
+          "params": [
+            "partial"
+          ],
+          "returnType": "Clip",
+          "exported": true,
+          "lineCount": 20
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "TRANSITIONS",
+        "DEFAULT_TRANSITION_DURATION",
+        "BLEND_MODES",
+        "blendCSS",
+        "defaultTextStyle",
+        "defaultClip"
+      ],
+      "totalLines": 283,
+      "hasStructuralAnalysis": true
+    },
+    "web/tsconfig.json": {
+      "filePath": "web/tsconfig.json",
+      "contentHash": "c611c37a09f596adc8af06a52f52876f09c1b63c0f278a06a454c52ee01ea5eb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    "web/vite.config.ts": {
+      "filePath": "web/vite.config.ts",
+      "contentHash": "596316b3c16aee606313d873dcd28a8996403bf02fdbb31cf2aee2fce4229046",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vite",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "@vitejs/plugin-vue",
+          "specifiers": [
+            "vue"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

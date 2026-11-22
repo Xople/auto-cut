@@ -549,3 +549,73 @@ func TestRenderCaptionsUseBundledFont(t *testing.T) {
 		t.Fatalf("expected caption glyphs near the bottom, found %d bright pixels", lower)
 	}
 }
+
+func TestRenderVideoBlurBackgroundFillAndCaptionBox(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not available")
+	}
+	dir := t.TempDir()
+	cache := filepath.Join(dir, "cache")
+	output := filepath.Join(dir, "blur-out.mp4")
+	// 16:9 red video placed inside a 9:16 (360x640) project with blur fill
+	wide := makeColorVideo(t, dir, "wide.mp4", "red", 640, 360)
+
+	tl := models.NewTimeline(360, 640, 30)
+	tl.CaptionStyle = models.CaptionStyle{
+		FontFamily:      "Inter",
+		FontSize:        56,
+		Bold:            true,
+		Color:           "#FFFFFF",
+		HighlightColor:  "#FFD400",
+		Opacity:         1,
+		PositionY:       0.82,
+		WordsPerChunk:   3,
+		BackgroundColor: "#000000",
+		BackgroundAlpha: 0.7,
+	}
+	tl.Tracks = []models.Track{
+		{
+			ID: "video-main", Kind: models.TrackVideo, Name: "Video", Height: models.DefaultTrackHeight,
+			Clips: []models.Clip{
+				{
+					ID:             "wide",
+					AssetID:        "wide",
+					Start:          0,
+					Duration:       1.5,
+					In:             0,
+					Out:            1.5,
+					Speed:          1,
+					Opacity:        1,
+					Scale:          1,
+					BackgroundFill: "blur",
+					BackgroundBlur: 18,
+					BackgroundDim:  0.12,
+				},
+			},
+		},
+		{
+			ID: "caption", Kind: models.TrackCaption, Name: "Caption", Height: models.DefaultTrackHeight,
+			Clips: []models.Clip{{ID: "cap1", Text: "AMONG US", Start: 0, Duration: 1.5}},
+		},
+		{ID: "audio-main", Kind: models.TrackAudio, Name: "Audio", Height: models.DefaultTrackHeight},
+	}
+	assets := map[string]*models.Asset{
+		"wide": {ID: "wide", Kind: models.AssetVideo, Path: wide, Duration: 1.5, Width: 640, Height: 360},
+	}
+	renderer := NewRenderer(media.NewFFmpeg("ffmpeg", false), fonts.NewIndex())
+	if err := renderer.Render(context.Background(), RenderRequest{
+		Timeline:   tl,
+		Assets:     assets,
+		Settings:   models.ExportSettings{Width: 360, Height: 640, FPS: 30, Encoder: "libx264", Quality: 28},
+		OutputPath: output,
+		CacheDir:   cache,
+	}); err != nil {
+		t.Fatalf("render blur fill: %v", err)
+	}
+
+	// Top letterbox area (y=20) should NOT be black because blur fill fills the 9:16 canvas with dimmed red
+	r, _, _ := framePixel(t, output, dir, 0.5, 180, 20)
+	if r < 80 {
+		t.Fatalf("expected top 9:16 bar to be filled with blurred red background, got r=%d", r)
+	}
+}

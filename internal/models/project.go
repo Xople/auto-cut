@@ -110,6 +110,17 @@ type Clip struct {
 
 	// Keyframes animate the transform above. Time is relative to the clip start.
 	Keyframes []TransformKeyframe `json:"keyframes,omitempty"`
+
+	// BackgroundFill controls how aspect-ratio bars are filled ("black" or "blur").
+	BackgroundFill string  `json:"background_fill,omitempty"`
+	BackgroundBlur float64 `json:"background_blur,omitempty"`
+	BackgroundDim  float64 `json:"background_dim,omitempty"`
+}
+
+// TimeRange represents a [Start, End] timeline interval in seconds.
+type TimeRange struct {
+	Start float64 `json:"start"`
+	End   float64 `json:"end"`
 }
 
 // TransformKeyframe stores one transform pose on a clip. Values interpolate
@@ -171,10 +182,12 @@ type CaptionStyle struct {
 	ShadowColor    string  `json:"shadow_color"`
 	Opacity        float64 `json:"opacity"`
 	BlendMode      string  `json:"blend_mode"`
-	PositionY      float64 `json:"position_y"`
-	Uppercase      bool    `json:"uppercase"`
-	Highlight      bool    `json:"highlight"`
-	WordsPerChunk  int     `json:"words_per_chunk"`
+	PositionY       float64 `json:"position_y"`
+	Uppercase       bool    `json:"uppercase"`
+	Highlight       bool    `json:"highlight"`
+	WordsPerChunk   int     `json:"words_per_chunk"`
+	BackgroundColor string  `json:"background_color,omitempty"`
+	BackgroundAlpha float64 `json:"background_alpha,omitempty"`
 }
 
 // ExportSettings controls the final ffmpeg render.

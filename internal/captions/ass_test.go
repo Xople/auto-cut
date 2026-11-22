@@ -100,3 +100,31 @@ func TestGenerateDynamicAssSubtitles(t *testing.T) {
 		t.Errorf("first phrase should stay within 3 words, got %s", dialogues[0])
 	}
 }
+
+func TestFromTranscriptWithExclusions(t *testing.T) {
+	tr := &models.Transcript{
+		AssetID: "vo_1",
+		Words: []models.WordTiming{
+			{Word: "Kenapa", Start: 0.2, End: 0.5},
+			{Word: "Among", Start: 0.6, End: 0.9},
+			{Word: "Us", Start: 1.0, End: 1.3},
+			{Word: "ini", Start: 3.0, End: 3.3},
+			{Word: "game", Start: 3.4, End: 3.8},
+			{Word: "awal", Start: 5.0, End: 5.4},
+		},
+	}
+	clips := []models.Clip{
+		{ID: "c1", AssetID: "vo_1", Start: 0, Duration: 6.0, In: 0, Out: 6.0},
+	}
+	exclude := []models.TimeRange{
+		{Start: 0.0, End: 2.5}, // Hook card
+		{Start: 4.5, End: 6.0}, // DeskriptifBroll card
+	}
+	out := FromTranscriptWithExclusions(clips, tr, models.DefaultCaptionStyle(), exclude)
+	if len(out) != 1 {
+		t.Fatalf("expected 1 caption chunk outside excluded ranges, got %d", len(out))
+	}
+	if out[0].Text != "ini game" {
+		t.Fatalf("expected 'ini game', got %q", out[0].Text)
+	}
+}

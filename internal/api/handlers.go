@@ -37,6 +37,7 @@ type Server struct {
 	exports  map[string]*models.ExportJob
 	latest   map[string]string
 	analysis map[string]*models.AnalysisResult
+	syncSubs map[string]map[chan string]struct{}
 }
 
 func NewServer(cfg *config.Config, database *db.DB, orch *pipeline.Orchestrator) *Server {
@@ -54,6 +55,7 @@ func NewServer(cfg *config.Config, database *db.DB, orch *pipeline.Orchestrator)
 		exports:      map[string]*models.ExportJob{},
 		latest:       map[string]string{},
 		analysis:     map[string]*models.AnalysisResult{},
+		syncSubs:     map[string]map[chan string]struct{}{},
 	}
 	s.routes()
 	return s
@@ -114,6 +116,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/projects/{id}/export/events", s.handleExportEvents)
 	s.mux.HandleFunc("GET /api/projects/{id}/export/latest", s.handleLatestExport)
 	s.mux.HandleFunc("GET /api/projects/{id}/export/{exportID}/download", s.handleExportDownload)
+	s.mux.HandleFunc("POST /api/projects/{id}/notify", s.handleNotifyProjectSync)
+	s.mux.HandleFunc("GET /api/projects/{id}/sync", s.handleProjectSyncEvents)
 
 	s.mux.HandleFunc("POST /api/jobs", s.handleCreateJob)
 	s.mux.HandleFunc("GET /api/jobs", s.handleListJobs)

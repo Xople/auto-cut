@@ -9,7 +9,8 @@
     "dev:web": "npm --prefix web run dev",
     "build:web": "npm --prefix web run build",
     "tauri": "tauri",
-    "build:sidecar": "node scripts/build-sidecar.mjs"
+    "build:sidecar": "node scripts/build-sidecar.mjs",
+    "build:mcp": "go build -o bin/autocut-mcp.exe ./cmd/mcp"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.1.0"

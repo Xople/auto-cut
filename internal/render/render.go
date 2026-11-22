@@ -471,9 +471,32 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 				used[asset.ID]++
 
 				src := fmt.Sprintf("[vc%d]", b.nextLabel())
-				b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease,format=rgba,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,setsar=1,setpts=PTS+%s/TB%s",
-					source, formatSeconds(in), formatSeconds(out), formatSeconds(fps),
-					width, height, width, height, formatSeconds(clip.Start), src)
+				if clip.BackgroundFill == "blur" {
+					bgSrc := fmt.Sprintf("[vbg%d]", b.nextLabel())
+					fgSrc := fmt.Sprintf("[vfg%d]", b.nextLabel())
+					bgDone := fmt.Sprintf("[vbgd%d]", b.nextLabel())
+					fgDone := fmt.Sprintf("[vfgd%d]", b.nextLabel())
+					sigma := int(math.Round(clip.BackgroundBlur))
+					if sigma < 2 {
+						sigma = 24
+					}
+					dim := clip.BackgroundDim
+					if dim <= 0 {
+						dim = 0.14
+					}
+					b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,split=2%s%s",
+						source, formatSeconds(in), formatSeconds(out), formatSeconds(fps), bgSrc, fgSrc)
+					b.add("%sscale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,gblur=sigma=%d,eq=brightness=-%.2f,setsar=1%s",
+						bgSrc, width, height, width, height, sigma, dim, bgDone)
+					b.add("%sscale=%d:%d:force_original_aspect_ratio=decrease,setsar=1%s",
+						fgSrc, width, height, fgDone)
+					b.add("%s%soverlay=(W-w)/2:(H-h)/2:format=auto,format=rgba,setsar=1,setpts=PTS+%s/TB%s",
+						bgDone, fgDone, formatSeconds(clip.Start), src)
+				} else {
+					b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease,format=rgba,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,setsar=1,setpts=PTS+%s/TB%s",
+						source, formatSeconds(in), formatSeconds(out), formatSeconds(fps),
+						width, height, width, height, formatSeconds(clip.Start), src)
+				}
 
 				src, offsetX, offsetY := applyClipTransform(b, src, clip, width, height)
 				base = compositeLayer(b, base, src, clip, width, height, offsetX, offsetY)
@@ -557,7 +580,7 @@ func applyClipTransform(b *graphBuilder, src string, clip models.Clip, width, he
 	pullIn := clip.Transition != nil && clip.Transition.Type == models.TransitionPullIn && clip.Transition.Duration > 0
 	pullExpr := ""
 	if pullIn {
-		pullExpr = fmt.Sprintf("(1+0.18*max(0,1-(t-%s)/%s))",
+		pullExpr = fmt.Sprintf("(1+0.18*min(1,max(0,1-(t-%s)/%s)))",
 			formatSeconds(math.Max(0, clip.Start)), formatSeconds(clip.Transition.Duration))
 		faded := fmt.Sprintf("[vf%d]", b.nextLabel())
 		b.add("%sfade=t=in:st=%s:d=%s:alpha=1%s",

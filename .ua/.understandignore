@@ -1,0 +1,10 @@
+# Exclude build artifacts, font licenses, and skill scratch reports
+.ua/
+src-tauri/target-build/
+src-tauri/target/
+src-tauri/icons/
+internal/fonts/bundled/licenses/
+.taste-skill/
+logs/
+go.sum
+skills-lock.json

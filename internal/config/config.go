@@ -22,13 +22,23 @@ type Config struct {
 	SafetyPaddingMs       float64 `json:"safety_padding_ms"`
 }
 
+func DefaultDesktopStorageDir() string {
+	if appData := os.Getenv("APPDATA"); appData != "" {
+		candidate := filepath.Join(appData, "com.txshd.autocut")
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return candidate
+		}
+	}
+	return "data"
+}
+
 func LoadConfig() *Config {
 	cfg := &Config{
 		Port:                  "8080",
 		FFmpegPath:            "ffmpeg",
 		WhisperCLIPath:        filepath.Join("bin", "whisper", "whisper-cli.exe"),
 		WhisperModelPath:      filepath.Join("bin", "whisper", "models", "ggml-small.bin"),
-		StorageDir:            "data",
+		StorageDir:            DefaultDesktopStorageDir(),
 		UseNVENC:              true,
 		MinSilenceDuration:    0.4,
 		SilenceNoiseThreshold: "-30dB",

@@ -1,0 +1,908 @@
+{
+    "name":  "autocut-workstation",
+    "description":  "Editor video desktop lokal untuk produksi TxShD yang menggabungkan timeline bergaya CapCut, auto-cut voice-over (ffmpeg, whisper.cpp, DeepSeek, TypeSafe, Gemini), caption generator ASS, dan export MP4 dengan arsitektur Tauri 2 (Rust), Vue 3 (TypeScript), serta Go sidecar + SQLite.",
+    "languages":  [
+                      "batch",
+                      "css",
+                      "go",
+                      "html",
+                      "javascript",
+                      "json",
+                      "markdown",
+                      "mod",
+                      "rust",
+                      "toml",
+                      "typescript",
+                      "vue"
+                  ],
+    "frameworks":  [
+                       "Tauri 2",
+                       "Vue 3",
+                       "Vite",
+                       "Pinia",
+                       "Go net/http",
+                       "SQLite"
+                   ],
+    "files":  [
+                  {
+                      "path":  "PLAN-TIMELINE.md",
+                      "language":  "markdown",
+                      "sizeLines":  215,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "PRD.md",
+                      "language":  "markdown",
+                      "sizeLines":  155,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "README.md",
+                      "language":  "markdown",
+                      "sizeLines":  227,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "cmd/server/main.go",
+                      "language":  "go",
+                      "sizeLines":  65,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "config.example.json",
+                      "language":  "json",
+                      "sizeLines":  14,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "go.mod",
+                      "language":  "mod",
+                      "sizeLines":  16,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "guidance.md",
+                      "language":  "markdown",
+                      "sizeLines":  32,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "internal/ai/deepseek/client.go",
+                      "language":  "go",
+                      "sizeLines":  178,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/ai/gemini/client.go",
+                      "language":  "go",
+                      "sizeLines":  264,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/ai/typesafe/client.go",
+                      "language":  "go",
+                      "sizeLines":  256,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/api/handlers.go",
+                      "language":  "go",
+                      "sizeLines":  734,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/api/handlers_test.go",
+                      "language":  "go",
+                      "sizeLines":  152,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/api/projects.go",
+                      "language":  "go",
+                      "sizeLines":  715,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/api/tasks.go",
+                      "language":  "go",
+                      "sizeLines":  167,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/api/timeline_test.go",
+                      "language":  "go",
+                      "sizeLines":  138,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/captions/ass.go",
+                      "language":  "go",
+                      "sizeLines":  177,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/captions/ass_test.go",
+                      "language":  "go",
+                      "sizeLines":  102,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/captions/generate.go",
+                      "language":  "go",
+                      "sizeLines":  118,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/config/config.go",
+                      "language":  "go",
+                      "sizeLines":  96,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/db/db.go",
+                      "language":  "go",
+                      "sizeLines":  432,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/db/project.go",
+                      "language":  "go",
+                      "sizeLines":  171,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/fonts/bundled_test.go",
+                      "language":  "go",
+                      "sizeLines":  54,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/fonts/fonts.go",
+                      "language":  "go",
+                      "sizeLines":  460,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/logger/logger.go",
+                      "language":  "go",
+                      "sizeLines":  83,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/media/ffmpeg.go",
+                      "language":  "go",
+                      "sizeLines":  431,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/media/ffmpeg_filter_test.go",
+                      "language":  "go",
+                      "sizeLines":  111,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/media/inspect.go",
+                      "language":  "go",
+                      "sizeLines":  247,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/models/models.go",
+                      "language":  "go",
+                      "sizeLines":  149,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/models/project.go",
+                      "language":  "go",
+                      "sizeLines":  269,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/models/timeline.go",
+                      "language":  "go",
+                      "sizeLines":  380,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/models/timeline_test.go",
+                      "language":  "go",
+                      "sizeLines":  218,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/pipeline/analyze.go",
+                      "language":  "go",
+                      "sizeLines":  147,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/pipeline/orchestrator.go",
+                      "language":  "go",
+                      "sizeLines":  594,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/pipeline/orchestrator_test.go",
+                      "language":  "go",
+                      "sizeLines":  126,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/project/service.go",
+                      "language":  "go",
+                      "sizeLines":  318,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/render/captions.go",
+                      "language":  "go",
+                      "sizeLines":  206,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/render/render.go",
+                      "language":  "go",
+                      "sizeLines":  1049,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/render/render_test.go",
+                      "language":  "go",
+                      "sizeLines":  551,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/storage/cleaner.go",
+                      "language":  "go",
+                      "sizeLines":  87,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/stt/whisper.go",
+                      "language":  "go",
+                      "sizeLines":  167,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "internal/timeline/edit.go",
+                      "language":  "go",
+                      "sizeLines":  172,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "package.json",
+                      "language":  "json",
+                      "sizeLines":  17,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "run.bat",
+                      "language":  "batch",
+                      "sizeLines":  9,
+                      "fileCategory":  "script"
+                  },
+                  {
+                      "path":  "scripts/build-sidecar.mjs",
+                      "language":  "javascript",
+                      "sizeLines":  38,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src-tauri/Cargo.toml",
+                      "language":  "toml",
+                      "sizeLines":  25,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "src-tauri/build.rs",
+                      "language":  "rust",
+                      "sizeLines":  3,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src-tauri/capabilities/default.json",
+                      "language":  "json",
+                      "sizeLines":  7,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "src-tauri/src/lib.rs",
+                      "language":  "rust",
+                      "sizeLines":  173,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src-tauri/src/main.rs",
+                      "language":  "rust",
+                      "sizeLines":  5,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src-tauri/tauri.conf.json",
+                      "language":  "json",
+                      "sizeLines":  44,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "technical.md",
+                      "language":  "markdown",
+                      "sizeLines":  393,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "web/index.html",
+                      "language":  "html",
+                      "sizeLines":  13,
+                      "fileCategory":  "markup"
+                  },
+                  {
+                      "path":  "web/package.json",
+                      "language":  "json",
+                      "sizeLines":  23,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "web/src/App.vue",
+                      "language":  "vue",
+                      "sizeLines":  358,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/api.ts",
+                      "language":  "typescript",
+                      "sizeLines":  215,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/AutoCutDialog.vue",
+                      "language":  "vue",
+                      "sizeLines":  437,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/CaptionPreview.vue",
+                      "language":  "vue",
+                      "sizeLines":  107,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/ExportDialog.vue",
+                      "language":  "vue",
+                      "sizeLines":  394,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/FontPicker.vue",
+                      "language":  "vue",
+                      "sizeLines":  344,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/MediaPanel.vue",
+                      "language":  "vue",
+                      "sizeLines":  649,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/OverlayPreview.vue",
+                      "language":  "vue",
+                      "sizeLines":  338,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/PlayheadMarker.vue",
+                      "language":  "vue",
+                      "sizeLines":  54,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/PreviewStage.vue",
+                      "language":  "vue",
+                      "sizeLines":  834,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/ProjectLauncher.vue",
+                      "language":  "vue",
+                      "sizeLines":  530,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/PropertiesPanel.vue",
+                      "language":  "vue",
+                      "sizeLines":  944,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/TimelinePanel.vue",
+                      "language":  "vue",
+                      "sizeLines":  1694,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/ToastHost.vue",
+                      "language":  "vue",
+                      "sizeLines":  71,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/TopBar.vue",
+                      "language":  "vue",
+                      "sizeLines":  233,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/components/Waveform.vue",
+                      "language":  "vue",
+                      "sizeLines":  115,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/env.d.ts",
+                      "language":  "typescript",
+                      "sizeLines":  11,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/lib/fonts.ts",
+                      "language":  "typescript",
+                      "sizeLines":  31,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/lib/format.ts",
+                      "language":  "typescript",
+                      "sizeLines":  55,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/lib/transform.ts",
+                      "language":  "typescript",
+                      "sizeLines":  112,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/main.ts",
+                      "language":  "typescript",
+                      "sizeLines":  6,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/stores/editor.ts",
+                      "language":  "typescript",
+                      "sizeLines":  1244,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/src/styles.css",
+                      "language":  "css",
+                      "sizeLines":  499,
+                      "fileCategory":  "markup"
+                  },
+                  {
+                      "path":  "web/src/types.ts",
+                      "language":  "typescript",
+                      "sizeLines":  282,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "web/tsconfig.json",
+                      "language":  "json",
+                      "sizeLines":  20,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "web/vite.config.ts",
+                      "language":  "typescript",
+                      "sizeLines":  15,
+                      "fileCategory":  "code"
+                  }
+              ],
+    "totalFiles":  79,
+    "filteredByIgnore":  2763,
+    "estimatedComplexity":  "moderate",
+    "importMap":  {
+                      "PLAN-TIMELINE.md":  [
+
+                                           ],
+                      "PRD.md":  [
+
+                                 ],
+                      "README.md":  [
+
+                                    ],
+                      "cmd/server/main.go":  [
+                                                 "internal/api/handlers.go",
+                                                 "internal/api/handlers_test.go",
+                                                 "internal/api/projects.go",
+                                                 "internal/api/tasks.go",
+                                                 "internal/api/timeline_test.go",
+                                                 "internal/config/config.go",
+                                                 "internal/db/db.go",
+                                                 "internal/db/project.go",
+                                                 "internal/logger/logger.go",
+                                                 "internal/pipeline/analyze.go",
+                                                 "internal/pipeline/orchestrator.go",
+                                                 "internal/pipeline/orchestrator_test.go"
+                                             ],
+                      "config.example.json":  [
+
+                                              ],
+                      "go.mod":  [
+
+                                 ],
+                      "guidance.md":  [
+
+                                      ],
+                      "internal/ai/deepseek/client.go":  [
+                                                             "internal/models/models.go",
+                                                             "internal/models/project.go",
+                                                             "internal/models/timeline.go",
+                                                             "internal/models/timeline_test.go"
+                                                         ],
+                      "internal/ai/gemini/client.go":  [
+                                                           "internal/models/models.go",
+                                                           "internal/models/project.go",
+                                                           "internal/models/timeline.go",
+                                                           "internal/models/timeline_test.go"
+                                                       ],
+                      "internal/ai/typesafe/client.go":  [
+                                                             "internal/models/models.go",
+                                                             "internal/models/project.go",
+                                                             "internal/models/timeline.go",
+                                                             "internal/models/timeline_test.go"
+                                                         ],
+                      "internal/api/handlers.go":  [
+                                                       "internal/config/config.go",
+                                                       "internal/db/db.go",
+                                                       "internal/db/project.go",
+                                                       "internal/media/ffmpeg.go",
+                                                       "internal/media/ffmpeg_filter_test.go",
+                                                       "internal/media/inspect.go",
+                                                       "internal/models/models.go",
+                                                       "internal/models/project.go",
+                                                       "internal/models/timeline.go",
+                                                       "internal/models/timeline_test.go",
+                                                       "internal/pipeline/analyze.go",
+                                                       "internal/pipeline/orchestrator.go",
+                                                       "internal/pipeline/orchestrator_test.go",
+                                                       "internal/project/service.go",
+                                                       "internal/render/captions.go",
+                                                       "internal/render/render.go",
+                                                       "internal/render/render_test.go",
+                                                       "internal/storage/cleaner.go"
+                                                   ],
+                      "internal/api/handlers_test.go":  [
+                                                            "internal/config/config.go",
+                                                            "internal/db/db.go",
+                                                            "internal/db/project.go",
+                                                            "internal/models/models.go",
+                                                            "internal/models/project.go",
+                                                            "internal/models/timeline.go",
+                                                            "internal/models/timeline_test.go",
+                                                            "internal/pipeline/analyze.go",
+                                                            "internal/pipeline/orchestrator.go",
+                                                            "internal/pipeline/orchestrator_test.go"
+                                                        ],
+                      "internal/api/projects.go":  [
+                                                       "internal/captions/ass.go",
+                                                       "internal/captions/ass_test.go",
+                                                       "internal/captions/generate.go",
+                                                       "internal/fonts/bundled_test.go",
+                                                       "internal/fonts/fonts.go",
+                                                       "internal/models/models.go",
+                                                       "internal/models/project.go",
+                                                       "internal/models/timeline.go",
+                                                       "internal/models/timeline_test.go",
+                                                       "internal/pipeline/analyze.go",
+                                                       "internal/pipeline/orchestrator.go",
+                                                       "internal/pipeline/orchestrator_test.go",
+                                                       "internal/render/captions.go",
+                                                       "internal/render/render.go",
+                                                       "internal/render/render_test.go",
+                                                       "internal/timeline/edit.go"
+                                                   ],
+                      "internal/api/tasks.go":  [
+
+                                                ],
+                      "internal/api/timeline_test.go":  [
+                                                            "internal/config/config.go",
+                                                            "internal/db/db.go",
+                                                            "internal/db/project.go",
+                                                            "internal/models/models.go",
+                                                            "internal/models/project.go",
+                                                            "internal/models/timeline.go",
+                                                            "internal/models/timeline_test.go",
+                                                            "internal/pipeline/analyze.go",
+                                                            "internal/pipeline/orchestrator.go",
+                                                            "internal/pipeline/orchestrator_test.go"
+                                                        ],
+                      "internal/captions/ass.go":  [
+                                                       "internal/models/models.go",
+                                                       "internal/models/project.go",
+                                                       "internal/models/timeline.go",
+                                                       "internal/models/timeline_test.go"
+                                                   ],
+                      "internal/captions/ass_test.go":  [
+                                                            "internal/models/models.go",
+                                                            "internal/models/project.go",
+                                                            "internal/models/timeline.go",
+                                                            "internal/models/timeline_test.go"
+                                                        ],
+                      "internal/captions/generate.go":  [
+                                                            "internal/models/models.go",
+                                                            "internal/models/project.go",
+                                                            "internal/models/timeline.go",
+                                                            "internal/models/timeline_test.go"
+                                                        ],
+                      "internal/config/config.go":  [
+
+                                                    ],
+                      "internal/db/db.go":  [
+                                                "internal/models/models.go",
+                                                "internal/models/project.go",
+                                                "internal/models/timeline.go",
+                                                "internal/models/timeline_test.go"
+                                            ],
+                      "internal/db/project.go":  [
+                                                     "internal/models/models.go",
+                                                     "internal/models/project.go",
+                                                     "internal/models/timeline.go",
+                                                     "internal/models/timeline_test.go"
+                                                 ],
+                      "internal/fonts/bundled_test.go":  [
+
+                                                         ],
+                      "internal/fonts/fonts.go":  [
+
+                                                  ],
+                      "internal/logger/logger.go":  [
+
+                                                    ],
+                      "internal/media/ffmpeg.go":  [
+                                                       "internal/models/models.go",
+                                                       "internal/models/project.go",
+                                                       "internal/models/timeline.go",
+                                                       "internal/models/timeline_test.go"
+                                                   ],
+                      "internal/media/ffmpeg_filter_test.go":  [
+                                                                   "internal/models/models.go",
+                                                                   "internal/models/project.go",
+                                                                   "internal/models/timeline.go",
+                                                                   "internal/models/timeline_test.go"
+                                                               ],
+                      "internal/media/inspect.go":  [
+                                                        "internal/models/models.go",
+                                                        "internal/models/project.go",
+                                                        "internal/models/timeline.go",
+                                                        "internal/models/timeline_test.go"
+                                                    ],
+                      "internal/models/models.go":  [
+
+                                                    ],
+                      "internal/models/project.go":  [
+
+                                                     ],
+                      "internal/models/timeline.go":  [
+
+                                                      ],
+                      "internal/models/timeline_test.go":  [
+
+                                                           ],
+                      "internal/pipeline/analyze.go":  [
+                                                           "internal/ai/deepseek/client.go",
+                                                           "internal/models/models.go",
+                                                           "internal/models/project.go",
+                                                           "internal/models/timeline.go",
+                                                           "internal/models/timeline_test.go"
+                                                       ],
+                      "internal/pipeline/orchestrator.go":  [
+                                                                "internal/ai/deepseek/client.go",
+                                                                "internal/ai/gemini/client.go",
+                                                                "internal/ai/typesafe/client.go",
+                                                                "internal/captions/ass.go",
+                                                                "internal/captions/ass_test.go",
+                                                                "internal/captions/generate.go",
+                                                                "internal/config/config.go",
+                                                                "internal/db/db.go",
+                                                                "internal/db/project.go",
+                                                                "internal/logger/logger.go",
+                                                                "internal/media/ffmpeg.go",
+                                                                "internal/media/ffmpeg_filter_test.go",
+                                                                "internal/media/inspect.go",
+                                                                "internal/models/models.go",
+                                                                "internal/models/project.go",
+                                                                "internal/models/timeline.go",
+                                                                "internal/models/timeline_test.go",
+                                                                "internal/storage/cleaner.go",
+                                                                "internal/stt/whisper.go"
+                                                            ],
+                      "internal/pipeline/orchestrator_test.go":  [
+                                                                     "internal/models/models.go",
+                                                                     "internal/models/project.go",
+                                                                     "internal/models/timeline.go",
+                                                                     "internal/models/timeline_test.go"
+                                                                 ],
+                      "internal/project/service.go":  [
+                                                          "internal/config/config.go",
+                                                          "internal/db/db.go",
+                                                          "internal/db/project.go",
+                                                          "internal/fonts/bundled_test.go",
+                                                          "internal/fonts/fonts.go",
+                                                          "internal/logger/logger.go",
+                                                          "internal/media/ffmpeg.go",
+                                                          "internal/media/ffmpeg_filter_test.go",
+                                                          "internal/media/inspect.go",
+                                                          "internal/models/models.go",
+                                                          "internal/models/project.go",
+                                                          "internal/models/timeline.go",
+                                                          "internal/models/timeline_test.go"
+                                                      ],
+                      "internal/render/captions.go":  [
+                                                          "internal/models/models.go",
+                                                          "internal/models/project.go",
+                                                          "internal/models/timeline.go",
+                                                          "internal/models/timeline_test.go"
+                                                      ],
+                      "internal/render/render.go":  [
+                                                        "internal/fonts/bundled_test.go",
+                                                        "internal/fonts/fonts.go",
+                                                        "internal/media/ffmpeg.go",
+                                                        "internal/media/ffmpeg_filter_test.go",
+                                                        "internal/media/inspect.go",
+                                                        "internal/models/models.go",
+                                                        "internal/models/project.go",
+                                                        "internal/models/timeline.go",
+                                                        "internal/models/timeline_test.go"
+                                                    ],
+                      "internal/render/render_test.go":  [
+                                                             "internal/fonts/bundled_test.go",
+                                                             "internal/fonts/fonts.go",
+                                                             "internal/media/ffmpeg.go",
+                                                             "internal/media/ffmpeg_filter_test.go",
+                                                             "internal/media/inspect.go",
+                                                             "internal/models/models.go",
+                                                             "internal/models/project.go",
+                                                             "internal/models/timeline.go",
+                                                             "internal/models/timeline_test.go"
+                                                         ],
+                      "internal/storage/cleaner.go":  [
+                                                          "internal/models/models.go",
+                                                          "internal/models/project.go",
+                                                          "internal/models/timeline.go",
+                                                          "internal/models/timeline_test.go"
+                                                      ],
+                      "internal/stt/whisper.go":  [
+                                                      "internal/models/models.go",
+                                                      "internal/models/project.go",
+                                                      "internal/models/timeline.go",
+                                                      "internal/models/timeline_test.go"
+                                                  ],
+                      "internal/timeline/edit.go":  [
+                                                        "internal/models/models.go",
+                                                        "internal/models/project.go",
+                                                        "internal/models/timeline.go",
+                                                        "internal/models/timeline_test.go"
+                                                    ],
+                      "package.json":  [
+
+                                       ],
+                      "run.bat":  [
+
+                                  ],
+                      "scripts/build-sidecar.mjs":  [
+
+                                                    ],
+                      "src-tauri/Cargo.toml":  [
+
+                                               ],
+                      "src-tauri/build.rs":  [
+
+                                             ],
+                      "src-tauri/capabilities/default.json":  [
+
+                                                              ],
+                      "src-tauri/src/lib.rs":  [
+
+                                               ],
+                      "src-tauri/src/main.rs":  [
+
+                                                ],
+                      "src-tauri/tauri.conf.json":  [
+
+                                                    ],
+                      "technical.md":  [
+
+                                       ],
+                      "web/index.html":  [
+
+                                         ],
+                      "web/package.json":  [
+
+                                           ],
+                      "web/src/App.vue":  [
+
+                                          ],
+                      "web/src/api.ts":  [
+                                             "web/src/types.ts"
+                                         ],
+                      "web/src/components/AutoCutDialog.vue":  [
+
+                                                               ],
+                      "web/src/components/CaptionPreview.vue":  [
+
+                                                                ],
+                      "web/src/components/ExportDialog.vue":  [
+
+                                                              ],
+                      "web/src/components/FontPicker.vue":  [
+
+                                                            ],
+                      "web/src/components/MediaPanel.vue":  [
+
+                                                            ],
+                      "web/src/components/OverlayPreview.vue":  [
+
+                                                                ],
+                      "web/src/components/PlayheadMarker.vue":  [
+
+                                                                ],
+                      "web/src/components/PreviewStage.vue":  [
+
+                                                              ],
+                      "web/src/components/ProjectLauncher.vue":  [
+
+                                                                 ],
+                      "web/src/components/PropertiesPanel.vue":  [
+
+                                                                 ],
+                      "web/src/components/TimelinePanel.vue":  [
+
+                                                               ],
+                      "web/src/components/ToastHost.vue":  [
+
+                                                           ],
+                      "web/src/components/TopBar.vue":  [
+
+                                                        ],
+                      "web/src/components/Waveform.vue":  [
+
+                                                          ],
+                      "web/src/env.d.ts":  [
+
+                                           ],
+                      "web/src/lib/fonts.ts":  [
+                                                   "web/src/api.ts",
+                                                   "web/src/types.ts"
+                                               ],
+                      "web/src/lib/format.ts":  [
+
+                                                ],
+                      "web/src/lib/transform.ts":  [
+                                                       "web/src/types.ts"
+                                                   ],
+                      "web/src/main.ts":  [
+                                              "web/src/App.vue",
+                                              "web/src/styles.css"
+                                          ],
+                      "web/src/stores/editor.ts":  [
+                                                       "web/src/api.ts",
+                                                       "web/src/lib/fonts.ts",
+                                                       "web/src/lib/transform.ts",
+                                                       "web/src/types.ts"
+                                                   ],
+                      "web/src/styles.css":  [
+
+                                             ],
+                      "web/src/types.ts":  [
+
+                                           ],
+                      "web/tsconfig.json":  [
+
+                                            ],
+                      "web/vite.config.ts":  [
+
+                                             ]
+                  }
+}

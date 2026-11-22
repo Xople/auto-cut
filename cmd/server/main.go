@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"autocut/internal/api"
 	"autocut/internal/config"
@@ -12,6 +14,20 @@ import (
 	"autocut/internal/logger"
 	"autocut/internal/pipeline"
 )
+
+func writeSessionFile(storageDir, baseURL, token string) string {
+	_ = os.MkdirAll(storageDir, 0755)
+	sessionPath := filepath.Join(storageDir, "session.json")
+	payload := map[string]any{
+		"base_url": baseURL,
+		"token":    token,
+		"pid":      os.Getpid(),
+	}
+	if data, err := json.MarshalIndent(payload, "", "  "); err == nil {
+		_ = os.WriteFile(sessionPath, data, 0600)
+	}
+	return sessionPath
+}
 
 func watchParent() {
 	if os.Getenv("AUTOCUT_WATCH_STDIN") != "1" {
@@ -54,6 +70,8 @@ func main() {
 	server := api.NewServer(cfg, database, orchestrator)
 
 	addr := "127.0.0.1:" + cfg.Port
+	sessionPath := writeSessionFile(cfg.StorageDir, "http://"+addr, os.Getenv("AUTOCUT_TOKEN"))
+	defer os.Remove(sessionPath)
 	logger.Info("🚀 AutoCut Server berjalan di http://%s", addr)
 	logger.Info("Tekan Ctrl+C untuk menghentikan server.")
 	logger.Info("==================================================")

@@ -10,9 +10,18 @@ import (
 )
 
 var (
-	appFile   *os.File
-	errorFile *os.File
+	appFile    *os.File
+	errorFile  *os.File
+	consoleOut io.Writer = os.Stdout
 )
+
+// SetConsoleOutput redirects console log output (e.g. to os.Stderr or io.Discard for MCP stdio servers).
+func SetConsoleOutput(w io.Writer) {
+	if w == nil {
+		w = io.Discard
+	}
+	consoleOut = w
+}
 
 // InitLogger initializes file loggers in the specified directory.
 func InitLogger(logDir string) error {
@@ -45,7 +54,7 @@ func InitLogger(logDir string) error {
 // Info logs informational messages.
 func Info(format string, v ...any) {
 	msg := fmt.Sprintf("[%s] [INFO] %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, v...))
-	fmt.Print(msg)
+	_, _ = io.WriteString(consoleOut, msg)
 	if appFile != nil {
 		_, _ = appFile.WriteString(msg)
 	}
@@ -54,7 +63,7 @@ func Info(format string, v ...any) {
 // Warn logs warning messages.
 func Warn(format string, v ...any) {
 	msg := fmt.Sprintf("[%s] [WARN] %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, v...))
-	fmt.Print(msg)
+	_, _ = io.WriteString(consoleOut, msg)
 	if appFile != nil {
 		_, _ = appFile.WriteString(msg)
 	}
@@ -63,7 +72,7 @@ func Warn(format string, v ...any) {
 // Error logs error messages to both app.log and error.log.
 func Error(format string, v ...any) {
 	msg := fmt.Sprintf("[%s] [ERROR] %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, v...))
-	fmt.Print(msg)
+	_, _ = io.WriteString(consoleOut, msg)
 	if appFile != nil {
 		_, _ = appFile.WriteString(msg)
 	}

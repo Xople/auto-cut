@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { api } from '../api'
+import { api, subscribeProjectSync } from '../api'
 import { applyBundledFonts } from '../lib/fonts'
 import {
   clampTransform,
@@ -342,9 +342,37 @@ export const useEditor = defineStore('editor', () => {
     }
   }
 
+  let stopProjectSync: (() => void) | null = null
+
+  async function reloadFromRemote() {
+    const current = project.value
+    if (!current || dirty) return
+    try {
+      const [freshProject, freshAssets] = await Promise.all([
+        api.getProject(current.id),
+        api.listAssets(current.id),
+      ])
+      if (project.value?.id !== current.id || dirty) return
+      project.value = freshProject
+      assets.value = freshAssets
+      pruneSelection()
+      clampPlayhead()
+      notify('Project diperbarui oleh AI Agent (MCP).', 'info')
+    } catch {
+      /* ignore transient reload error */
+    }
+  }
+
   async function loadProject(p: Project) {
     await flushSave()
+    if (stopProjectSync) {
+      stopProjectSync()
+      stopProjectSync = null
+    }
     project.value = p
+    stopProjectSync = subscribeProjectSync(p.id, () => {
+      void reloadFromRemote()
+    })
     if (migrateLinkedAudio(p.timeline)) {
       scheduleSave()
       notify('Audio bawaan video sekarang menyatu dengan clip videonya.', 'info')

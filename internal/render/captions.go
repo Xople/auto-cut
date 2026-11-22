@@ -79,8 +79,23 @@ func writeASS(path string, clips []models.Clip, style models.CaptionStyle, width
 
 	sb.WriteString("[V4+ Styles]\n")
 	sb.WriteString("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
-	sb.WriteString(fmt.Sprintf("Style: Cap,%s,%d,%s,%s,%s,%s,%d,%d,0,0,100,100,0,0,1,%.1f,%.1f,5,60,60,0,1\n\n",
-		fontName, fontSize, primary, highlight, outlineColor, shadowColor, bold, italic, outline, shadow))
+	borderStyle := 1
+	if style.BackgroundAlpha > 0 {
+		borderStyle = 3
+		boxAlpha := 255 - int(clamp01(style.BackgroundAlpha)*255)
+		bgColor := style.BackgroundColor
+		if strings.TrimSpace(bgColor) == "" {
+			bgColor = "#000000"
+		}
+		outlineColor = assColor(bgColor, boxAlpha)
+		shadowColor = assColor(bgColor, boxAlpha)
+		if outline < 14*scale {
+			outline = 14 * scale
+		}
+		shadow = 0
+	}
+	sb.WriteString(fmt.Sprintf("Style: Cap,%s,%d,%s,%s,%s,%s,%d,%d,0,0,100,100,0,0,%d,%.1f,%.1f,5,60,60,0,1\n\n",
+		fontName, fontSize, primary, highlight, outlineColor, shadowColor, bold, italic, borderStyle, outline, shadow))
 
 	sb.WriteString("[Events]\n")
 	sb.WriteString("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")

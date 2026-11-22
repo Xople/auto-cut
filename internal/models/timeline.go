@@ -43,6 +43,13 @@ func NormalizeTimeline(t *Timeline) {
 	if t.FPS <= 0 {
 		t.FPS = 30
 	}
+	if math.IsNaN(t.CaptionStyle.BackgroundAlpha) || math.IsInf(t.CaptionStyle.BackgroundAlpha, 0) {
+		t.CaptionStyle.BackgroundAlpha = 0
+	}
+	t.CaptionStyle.BackgroundAlpha = clampFloat(t.CaptionStyle.BackgroundAlpha, 0, 1)
+	if t.CaptionStyle.BackgroundAlpha > 0 && t.CaptionStyle.BackgroundColor == "" {
+		t.CaptionStyle.BackgroundColor = "#000000"
+	}
 	for i := range t.Tracks {
 		track := &t.Tracks[i]
 		if track.Kind == "" {
@@ -92,6 +99,19 @@ func NormalizeTimeline(t *Timeline) {
 				}
 				if math.IsNaN(clip.Rotation) || math.IsInf(clip.Rotation, 0) {
 					clip.Rotation = 0
+				}
+				switch clip.BackgroundFill {
+				case "blur":
+					if math.IsNaN(clip.BackgroundBlur) || math.IsInf(clip.BackgroundBlur, 0) || clip.BackgroundBlur <= 0 {
+						clip.BackgroundBlur = 24
+					}
+					clip.BackgroundBlur = clampFloat(clip.BackgroundBlur, 2, 80)
+					if math.IsNaN(clip.BackgroundDim) || math.IsInf(clip.BackgroundDim, 0) || clip.BackgroundDim < 0 {
+						clip.BackgroundDim = 0.14
+					}
+					clip.BackgroundDim = clampFloat(clip.BackgroundDim, 0, 0.8)
+				default:
+					clip.BackgroundFill = ""
 				}
 			}
 		}

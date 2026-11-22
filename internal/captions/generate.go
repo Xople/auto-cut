@@ -13,6 +13,13 @@ import (
 // FromTranscript maps transcript words onto the timeline clips that use the
 // transcript's source asset, so captions follow trims and ripple edits.
 func FromTranscript(clips []models.Clip, transcript *models.Transcript, style models.CaptionStyle) []models.Clip {
+	return FromTranscriptWithExclusions(clips, transcript, style, nil)
+}
+
+// FromTranscriptWithExclusions maps transcript words onto the timeline clips and
+// skips any words whose mapped timeline interval overlaps an excluded time range
+// (such as full-screen BRollEngine Hook or DeskriptifBroll cards).
+func FromTranscriptWithExclusions(clips []models.Clip, transcript *models.Transcript, style models.CaptionStyle, exclude []models.TimeRange) []models.Clip {
 	if transcript == nil || len(transcript.Words) == 0 {
 		return nil
 	}
@@ -51,10 +58,16 @@ func FromTranscript(clips []models.Clip, transcript *models.Transcript, style mo
 			if end <= start {
 				continue
 			}
+			tlStart := clip.Start + (start - clip.In)
+			tlEnd := clip.Start + (end - clip.In)
+			if overlapsExcludedRange(tlStart, tlEnd, exclude) {
+				continue
+			}
 			mapped = append(mapped, models.WordTiming{
-				Word:  w.Word,
-				Start: clip.Start + (start - clip.In),
-				End:   clip.Start + (end - clip.In),
+				Word:       w.Word,
+				Start:      tlStart,
+				End:        tlEnd,
+				Confidence: w.Confidence,
 			})
 		}
 		out = append(out, chunkWords(mapped, wordsPerChunk)...)
@@ -64,6 +77,22 @@ func FromTranscript(clips []models.Clip, transcript *models.Transcript, style mo
 		out[i].ID = fmt.Sprintf("cap_%d_%d", i, len(out[i].Words))
 	}
 	return out
+}
+
+func overlapsExcludedRange(start, end float64, exclude []models.TimeRange) bool {
+	if len(exclude) == 0 {
+		return false
+	}
+	mid := (start + end) / 2
+	for _, r := range exclude {
+		if r.End <= r.Start {
+			continue
+		}
+		if mid >= r.Start && mid <= r.End {
+			return true
+		}
+	}
+	return false
 }
 
 func chunkWords(words []models.WordTiming, wordsPerChunk int) []models.Clip {

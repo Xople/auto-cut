@@ -303,6 +303,17 @@ function trackIcon() {
                 <option v-for="mode in BLEND_MODES" :key="mode.value" :value="mode.value">{{ mode.label }}</option>
               </select>
             </div>
+            <div v-if="isVideoTransform" class="field">
+              <label class="field-label">Background fill (rasio 16:9 di 9:16)</label>
+              <select
+                class="select"
+                :value="clip.background_fill || ''"
+                @change="update({ background_fill: ($event.target as HTMLSelectElement).value || '' }, 'bgfill')"
+              >
+                <option value="">Hitam (Standar)</option>
+                <option value="blur">Blur Video 9:16 (Gaya Shorts)</option>
+              </select>
+            </div>
 
             <template v-if="isText">
               <div class="divider" />
@@ -572,6 +583,31 @@ function trackIcon() {
             :value="editor.project?.timeline.caption_style.opacity"
             @input="updateCaption({ opacity: num($event) }, 'opacity')"
           />
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">
+              <span>Kotak latar</span>
+              <span class="value">{{ Math.round((editor.project?.timeline.caption_style.background_alpha ?? 0) * 100) }}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              :value="editor.project?.timeline.caption_style.background_alpha ?? 0"
+              @input="updateCaption({ background_alpha: num($event) }, 'bgalpha')"
+            />
+          </div>
+          <div class="field">
+            <div class="field-label">Warna kotak</div>
+            <input
+              type="color"
+              :value="editor.project?.timeline.caption_style.background_color || '#000000'"
+              @input="updateCaption({ background_color: ($event.target as HTMLInputElement).value }, 'bgcolor')"
+            />
+          </div>
         </div>
 
         <div class="divider" />

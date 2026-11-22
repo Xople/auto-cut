@@ -42,19 +42,39 @@ const fontSize = computed(() => Math.max(8, props.style.font_size * (props.displ
 const strokeWidth = computed(() => Math.max(0, props.style.stroke_width * (props.displayHeight / 1080)))
 const shadow = computed(() => Math.max(0, props.style.shadow * (props.displayHeight / 1080)))
 
-const containerStyle = computed(() => ({
-  top: `${props.style.position_y * 100}%`,
-  opacity: props.style.opacity,
-  mixBlendMode: blendCSS(props.style.blend_mode) as any,
-  fontFamily: `"${props.style.font_family}", Arial, sans-serif`,
-  fontSize: `${fontSize.value}px`,
-  fontWeight: props.style.bold ? '700' : '400',
-  fontStyle: props.style.italic ? 'italic' : 'normal',
-  color: props.style.color,
-  WebkitTextStroke: strokeWidth.value > 0.1 ? `${strokeWidth.value}px ${props.style.stroke_color}` : '0px transparent',
-  textShadow: shadow.value > 0.1 ? `0 ${shadow.value}px ${shadow.value * 1.7}px ${props.style.shadow_color}` : 'none',
-  textTransform: (props.style.uppercase ? 'uppercase' : 'none') as 'uppercase' | 'none',
-}))
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = (hex || '#000000').replace('#', '')
+  const value = clean.length === 3
+    ? clean.split('').map((c) => c + c).join('')
+    : clean.padEnd(6, '0').slice(0, 6)
+  const num = parseInt(value, 16)
+  const r = (num >> 16) & 255
+  const g = (num >> 8) & 255
+  const b = num & 255
+  return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`
+}
+
+const containerStyle = computed(() => {
+  const bgAlpha = props.style.background_alpha ?? 0
+  return {
+    top: `${props.style.position_y * 100}%`,
+    opacity: props.style.opacity,
+    mixBlendMode: blendCSS(props.style.blend_mode) as any,
+    fontFamily: `"${props.style.font_family}", Arial, sans-serif`,
+    fontSize: `${fontSize.value}px`,
+    fontWeight: props.style.bold ? '700' : '400',
+    fontStyle: props.style.italic ? 'italic' : 'normal',
+    color: props.style.color,
+    WebkitTextStroke: strokeWidth.value > 0.1 && bgAlpha <= 0 ? `${strokeWidth.value}px ${props.style.stroke_color}` : '0px transparent',
+    textShadow: shadow.value > 0.1 && bgAlpha <= 0 ? `0 ${shadow.value}px ${shadow.value * 1.7}px ${props.style.shadow_color}` : 'none',
+    textTransform: (props.style.uppercase ? 'uppercase' : 'none') as 'uppercase' | 'none',
+    backgroundColor: bgAlpha > 0 ? hexToRgba(props.style.background_color ?? '#000000', bgAlpha) : 'transparent',
+    padding: bgAlpha > 0 ? `${Math.round(fontSize.value * 0.18)}px ${Math.round(fontSize.value * 0.38)}px` : '0',
+    borderRadius: bgAlpha > 0 ? `${Math.round(fontSize.value * 0.16)}px` : '0',
+    width: bgAlpha > 0 ? 'auto' : '90%',
+    maxWidth: '90%',
+  }
+})
 
 const words = computed(() => {
   const clip = props.clip
