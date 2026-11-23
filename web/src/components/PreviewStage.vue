@@ -1,21 +1,51 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect, type CSSProperties } from 'vue'
-import { Diamond, Music, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-vue-next'
-import { assetUrl } from '../api'
+import { ChevronDown, Diamond, Type, Maximize, Minimize, Music, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-vue-next'
+import { assetUrl, thumbUrl } from '../api'
 import { useEditor } from '../stores/editor'
 import { formatTime, timecode } from '../lib/format'
 import { keyframeAt, transformAt } from '../lib/transform'
+import { usePreviewTextDrag } from '../lib/previewTextDrag'
 import OverlayPreview from './OverlayPreview.vue'
 import CaptionPreview from './CaptionPreview.vue'
-import { blendCSS, type Asset, type Clip } from '../types'
+import { blendCSS, videoEffectFilter, type Asset, type Clip } from '../types'
 
 const editor = useEditor()
+const { draft: textDraft, begin: beginTextDrag } = usePreviewTextDrag()
+let pickedTextId: string | null = null
 const shell = ref<HTMLElement | null>(null)
 const stageEl = ref<HTMLElement | null>(null)
 const stageSize = ref({ width: 0, height: 0 })
-const shellSize = ref({ width: 0, height: 0 })
+const player = ref<HTMLElement | null>(null)
+const expanded = ref(false)
+const windowPreview = ref(false)
+
+async function toggleFullscreen() {
+  if (windowPreview.value) {
+    windowPreview.value = false
+    expanded.value = false
+  } else if (document.fullscreenElement === player.value) {
+    await document.exitFullscreen()
+  } else if (player.value) {
+    try {
+      await player.value.requestFullscreen()
+    } catch {
+      windowPreview.value = true
+      expanded.value = true
+    }
+  }
+}
+
+function syncFullscreen() {
+  expanded.value = document.fullscreenElement === player.value || windowPreview.value
+}
+
+function onPreviewKey(event: KeyboardEvent) {
+  if (!expanded.value || event.key !== 'Escape') return
+  event.stopImmediatePropagation()
+  void toggleFullscreen()
+}
 const videoRefs = new Map<string, HTMLVideoElement>()
-const bgVideoRefs = new Map<string, HTMLVideoElement>()
 const muted = ref(false)
 const audioRefs = new Map<string, HTMLAudioElement>()
 
@@ -23,38 +53,74 @@ const project = computed(() => editor.project!)
 const timeline = computed(() => project.value.timeline)
 
 type VisualLayer =
-  | { kind: 'video'; clip: Clip; asset?: Asset; trackId: string }
-  | { kind: 'overlay'; clip: Clip; asset?: Asset; trackId: string }
+  | { kind: 'video'; clip: Clip; asset?: Asset; trackId: string; active: boolean }
+  | { kind: 'overlay'; clip: Clip; asset?: Asset; trackId: string; active: boolean }
 
 function contains(clip: Clip, time: number): boolean {
   return time >= clip.start - 0.0001 && time < clip.start + clip.duration - 0.0001
 }
 
+// Pre-mount upcoming video clips 2.5s before their start time so the browser
+// finishes loading metadata and seeking to clip.in (even on long AV1/H.264 MKV
+// GOPs) before the cut happens.
+const VIDEO_PREWARM_SECONDS = 2.5
+const AUDIO_PREWARM_SECONDS = 1.5
+
+function shouldMountVideo(clip: Clip, time: number): boolean {
+  if (contains(clip, time)) return true
+  return time < clip.start && clip.start - time <= VIDEO_PREWARM_SECONDS
+}
+
+function shouldMountAudio(clip: Clip, time: number): boolean {
+  if (contains(clip, time)) return true
+  return time < clip.start && clip.start - time <= AUDIO_PREWARM_SECONDS
+}
+
 // Video tracks are the base; overlay tracks always composite above them no
 // matter where they sit in the track list. Within one kind the first track is
 // the upper layer, so it is pushed last (later DOM nodes paint on top).
-const visualLayers = computed<VisualLayer[]>(() => {
+const visualLayers = shallowRef<VisualLayer[]>([])
+
+watchEffect(() => {
   const result: VisualLayer[] = []
   const tracks = timeline.value.tracks
+  const t = editor.playhead
   for (const kind of ['video', 'overlay'] as const) {
     for (let i = tracks.length - 1; i >= 0; i--) {
       const track = tracks[i]
       if (track.hidden || track.kind !== kind) continue
       for (const clip of track.clips) {
-        if (!contains(clip, editor.playhead)) continue
-        const asset = clip.asset_id ? editor.assetMap.get(clip.asset_id) : undefined
+        const active = contains(clip, t)
         if (kind === 'video') {
-          if (asset?.kind === 'video') result.push({ kind: 'video', clip, asset, trackId: track.id })
-        } else if (clip.text?.trim() || asset) {
-          result.push({ kind: 'overlay', clip, asset, trackId: track.id })
+          if (!shouldMountVideo(clip, t)) continue
+          const asset = clip.asset_id ? editor.assetMap.get(clip.asset_id) : undefined
+          if (asset?.kind === 'video') result.push({ kind: 'video', clip, asset, trackId: track.id, active })
+        } else {
+          if (!active) continue
+          const asset = clip.asset_id ? editor.assetMap.get(clip.asset_id) : undefined
+          if (clip.text?.trim() || asset) {
+            result.push({ kind: 'overlay', clip, asset, trackId: track.id, active: true })
+          }
         }
       }
     }
   }
-  return result
+  const prev = visualLayers.value
+  const same =
+    prev.length === result.length &&
+    prev.every(
+      (item, i) =>
+        item.kind === result[i].kind &&
+        item.clip === result[i].clip &&
+        item.asset === result[i].asset &&
+        item.trackId === result[i].trackId &&
+        item.active === result[i].active,
+    )
+  if (!same) visualLayers.value = result
 })
 
 const videoLayers = computed(() => visualLayers.value.filter((l) => l.kind === 'video'))
+const activeVideoLayers = computed(() => videoLayers.value.filter((l) => l.active))
 
 type OverlayItem = { clip: Clip; asset?: Asset; trackId: string }
 
@@ -77,7 +143,7 @@ watchEffect(() => {
 const selectedVideoLayer = computed(() => {
   const selection = editor.selection
   if (!selection) return null
-  return videoLayers.value.find((layer) => layer.clip.id === selection.clipId) ?? null
+  return activeVideoLayers.value.find((layer) => layer.clip.id === selection.clipId) ?? null
 })
 
 const selectedTransform = computed(() =>
@@ -124,41 +190,81 @@ const mirroredAudioClips = computed(() => {
   return ids
 })
 
-// Audio tracks mix with each video clip's built-in audio. Legacy projects that
-// still pair a video with a linked audio clip keep using that audio clip.
-const activeAudio = computed(() => {
-  const result: Array<{ clip: Clip; volume: number }> = []
+// Audio tracks play via <audio> elements (pre-warmed 1.5s ahead of clip.start so
+// short 0.35s transition impact SFX fire with zero decode latency); video tracks
+// play their own built-in audio directly on their <video> element.
+const activeAudio = shallowRef<Array<{ clip: Clip; volume: number; active: boolean }>>([])
+
+watchEffect(() => {
+  const result: Array<{ clip: Clip; volume: number; active: boolean }> = []
+  const t = editor.playhead
   for (const track of timeline.value.tracks) {
-    if (track.hidden) continue
-    if (track.kind === 'audio') {
-      if (track.muted) continue
-      for (const clip of track.clips) {
-        if (contains(clip, editor.playhead)) result.push({ clip, volume: clip.volume })
-      }
-      continue
-    }
-    if (track.kind !== 'video' || track.muted) continue
+    if (track.hidden || track.muted || track.kind !== 'audio') continue
     for (const clip of track.clips) {
-      if (!contains(clip, editor.playhead)) continue
-      if (linkedAudioTargets.value.has(clip.id) || mirroredAudioClips.value.has(clip.id)) continue
-      const asset = clip.asset_id ? editor.assetMap.get(clip.asset_id) : undefined
-      if (asset?.has_audio) result.push({ clip, volume: clip.volume })
+      if (clip.volume <= 0.0001) continue
+      if (!shouldMountAudio(clip, t)) continue
+      const active = contains(clip, t)
+      result.push({ clip, volume: clip.volume, active })
     }
   }
-  return result
+  const prev = activeAudio.value
+  const same =
+    prev.length === result.length &&
+    prev.every(
+      (item, i) =>
+        item.clip === result[i].clip && item.volume === result[i].volume && item.active === result[i].active,
+    )
+  if (!same) activeAudio.value = result
 })
 
-const activeCaption = computed(() => {
-  for (const track of timeline.value.tracks) {
+function videoClipVolume(clip: Clip, trackId: string): number {
+  if (muted.value) return 0
+  const track = timeline.value.tracks.find((t) => t.id === trackId)
+  if (!track || track.muted || track.hidden) return 0
+  if (linkedAudioTargets.value.has(clip.id) || mirroredAudioClips.value.has(clip.id)) return 0
+  const asset = clip.asset_id ? editor.assetMap.get(clip.asset_id) : undefined
+  if (!asset?.has_audio) return 0
+  return Math.max(0, Math.min(1, clip.volume))
+}
+
+const activeCaptions = computed(() => {
+  const items: { clip: Clip; trackId: string }[] = []
+  for (const track of [...timeline.value.tracks].reverse()) {
     if (track.kind !== 'caption' || track.muted || track.hidden) continue
     for (const clip of track.clips) {
-      if (contains(clip, editor.playhead)) return clip
+      if ((clip.text || clip.words?.length) && contains(clip, editor.playhead)) items.push({ clip, trackId: track.id })
     }
   }
-  return null
+  return items
 })
 
-const hasVisualLayers = computed(() => visualLayers.value.length > 0)
+const visibleText = computed(() => [
+  ...activeCaptions.value,
+  ...overlayItems.value.filter(item => item.clip.text?.trim()),
+])
+
+function selectPreviewText(event: Event) {
+  const id = (event.target as HTMLSelectElement).value
+  const item = visibleText.value.find(item => item.clip.id === id)
+  if (!item) return
+  editor.pause()
+  editor.select(item.trackId, id)
+  pickedTextId = id
+}
+
+// The picker gives a covered text item priority on the next drag inside its bounds.
+function startPickedText(event: PointerEvent) {
+  const id = pickedTextId
+  pickedTextId = null
+  if (!id || expanded.value || id !== editor.selectedClip?.id || !editor.selectedTrack) return
+  const hits = document.elementsFromPoint(event.clientX, event.clientY)
+  const match = hits.find((el): el is HTMLElement => el instanceof HTMLElement && el.dataset.previewText === id)
+  if (match && !match.contains(event.target as Node)) {
+    beginTextDrag(event, editor.selectedTrack.id, editor.selectedClip, 'move', match)
+  }
+}
+
+const hasVisualLayers = computed(() => activeVideoLayers.value.length > 0 || overlayItems.value.length > 0 || activeCaptions.value.length > 0)
 const hasAnyClip = computed(() => timeline.value.tracks.some((t) => t.clips.length > 0))
 const audioOnlyName = computed(() => {
   const first = activeAudio.value[0]?.clip
@@ -178,9 +284,9 @@ function measure() {
   if (!shell.value) return
   const width = shell.value.clientWidth
   const height = shell.value.clientHeight
-  shellSize.value = { width, height }
-  const availableW = Math.max(80, width - 34)
-  const availableH = Math.max(60, height - 34)
+  const inset = expanded.value ? 0 : 16
+  const availableW = Math.max(1, width - inset)
+  const availableH = Math.max(1, height - inset)
   let w = availableW
   let h = w / ratio.value
   if (h > availableH) {
@@ -190,7 +296,11 @@ function measure() {
   stageSize.value = { width: Math.round(w), height: Math.round(h) }
 }
 
+watch([ratio, expanded], measure, { flush: 'post' })
+
 onMounted(() => {
+  document.addEventListener('fullscreenchange', syncFullscreen)
+  window.addEventListener('keydown', onPreviewKey, true)
   measure()
   if (shell.value) {
     observer = new ResizeObserver(measure)
@@ -199,6 +309,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen)
+  window.removeEventListener('keydown', onPreviewKey, true)
   observer?.disconnect()
   transformDrag = null
   window.removeEventListener('pointermove', onTransformDragMove)
@@ -213,60 +325,121 @@ function expectedTime(clip: Clip): number {
   return Math.min(Math.max(clip.in, clip.in + relative), Math.max(clip.in, clip.out - 0.02))
 }
 
-function syncElement(el: HTMLMediaElement | null, clip: Clip, force = false) {
-  if (!el) return
-  const expected = expectedTime(clip)
+function syncElement(el: HTMLMediaElement | null, clip: Clip, force = false, isAudio = false, active = true) {
+  if (!el || el.readyState < 1) return
+  const expected = active ? expectedTime(clip) : clip.in
   const drift = el.currentTime - expected
-  if (force || Math.abs(drift) > 0.45) {
-    try {
-      el.currentTime = expected
-      el.playbackRate = 1
-    } catch {
-      /* not seekable yet */
+  const rate = clip.speed && clip.speed > 0 ? clip.speed : 1
+
+  if (editor.playing && active) {
+    // Never interrupt an in-flight seek while playing unless explicitly forced
+    if (!el.seeking && (force || Math.abs(drift) > (isAudio ? 0.35 : 0.45))) {
+      try {
+        el.currentTime = expected
+      } catch {
+        /* not seekable yet */
+      }
     }
-  } else if (editor.playing && Math.abs(drift) > 0.12) {
-    // Correct drift by nudging the rate; seeking every frame stalls playback.
-    el.playbackRate = Math.min(1.08, Math.max(0.92, 1 - drift * 0.5))
-  } else if (el.playbackRate !== 1) {
-    el.playbackRate = 1
-  }
-  if (editor.playing) {
+    // Avoid continuous playbackRate oscillation on audio which causes robotic pitch-stretching artifacts
+    if (isAudio) {
+      if (el.playbackRate !== rate) el.playbackRate = rate
+    } else if (!el.seeking && Math.abs(drift) > 0.14 && Math.abs(drift) <= 0.45) {
+      el.playbackRate = Math.min(rate * 1.06, Math.max(rate * 0.94, rate - drift * 0.35))
+    } else if (el.playbackRate !== rate) {
+      el.playbackRate = rate
+    }
     if (el.paused) el.play().catch(() => undefined)
-  } else if (!el.paused) {
-    el.pause()
+  } else {
+    if (!el.paused) el.pause()
+    if (!el.seeking && (force || Math.abs(drift) > 0.03)) {
+      try {
+        el.currentTime = expected
+      } catch {
+        /* not seekable yet */
+      }
+    }
+    if (el.playbackRate !== rate) el.playbackRate = rate
   }
 }
 
 function syncAll(force = false) {
   for (const layer of videoLayers.value) {
-    syncElement(videoRefs.get(layer.clip.id) ?? null, layer.clip, force)
-    if (layer.clip.background_fill === 'blur') {
-      syncElement(bgVideoRefs.get(layer.clip.id) ?? null, layer.clip, force)
+    const fg = videoRefs.get(layer.clip.id) ?? null
+    if (fg) {
+      const vol = layer.active ? videoClipVolume(layer.clip, layer.trackId) : 0
+      fg.muted = vol <= 0.0001
+      fg.volume = vol
     }
+    syncElement(fg, layer.clip, force, false, layer.active)
   }
   for (const item of activeAudio.value) {
     const el = audioRefs.get(item.clip.id) ?? null
-    if (el) el.volume = muted.value ? 0 : Math.max(0, Math.min(1, item.volume))
-    syncElement(el, item.clip, force)
+    if (el) {
+      const vol = item.active && !muted.value ? Math.max(0, Math.min(1, item.volume)) : 0
+      el.muted = vol <= 0.0001
+      el.volume = vol
+    }
+    syncElement(el, item.clip, force, true, item.active)
   }
 }
 
-function setVideoRef(id: string, el: HTMLVideoElement | null) {
-  if (el) {
-    videoRefs.set(id, el)
-    syncAll(true)
-  } else {
-    videoRefs.delete(id)
+const videoRefBinders = new Map<string, (el: unknown) => void>()
+const audioRefBinders = new Map<string, (el: unknown) => void>()
+
+function bindVideoRef(id: string): (el: unknown) => void {
+  let fn = videoRefBinders.get(id)
+  if (!fn) {
+    fn = (raw: unknown) => {
+      const el = raw as HTMLVideoElement | null
+      if (el) {
+        const prev = videoRefs.get(id)
+        videoRefs.set(id, el)
+        if (prev !== el) {
+          const layer = videoLayers.value.find((l) => l.clip.id === id)
+          if (layer) {
+            const vol = layer.active ? videoClipVolume(layer.clip, layer.trackId) : 0
+            el.muted = vol <= 0.0001
+            el.volume = vol
+            syncElement(el, layer.clip, true, false, layer.active)
+          }
+        }
+      } else {
+        const existing = videoRefs.get(id)
+        existing?.pause()
+        videoRefs.delete(id)
+      }
+    }
+    videoRefBinders.set(id, fn)
   }
+  return fn
 }
 
-function setBgVideoRef(id: string, el: HTMLVideoElement | null) {
-  if (el) {
-    bgVideoRefs.set(id, el)
-    syncAll(true)
-  } else {
-    bgVideoRefs.delete(id)
+function bindAudioRef(id: string): (el: unknown) => void {
+  let fn = audioRefBinders.get(id)
+  if (!fn) {
+    fn = (raw: unknown) => {
+      const el = raw as HTMLAudioElement | null
+      if (el) {
+        const prev = audioRefs.get(id)
+        audioRefs.set(id, el)
+        if (prev !== el) {
+          const item = activeAudio.value.find((a) => a.clip.id === id)
+          if (item) {
+            const vol = item.active && !muted.value ? Math.max(0, Math.min(1, item.volume)) : 0
+            el.muted = vol <= 0.0001
+            el.volume = vol
+            syncElement(el, item.clip, true, true, item.active)
+          }
+        }
+      } else {
+        const existing = audioRefs.get(id)
+        existing?.pause()
+        audioRefs.delete(id)
+      }
+    }
+    audioRefBinders.set(id, fn)
   }
+  return fn
 }
 
 function bgVideoLayerStyle(clip: Clip): CSSProperties {
@@ -275,17 +448,23 @@ function bgVideoLayerStyle(clip: Clip): CSSProperties {
   return {
     opacity: clip.opacity,
     objectFit: 'cover',
-    filter: `blur(${blurPx}px) brightness(${brightness.toFixed(2)})`,
+    filter: `${videoEffectFilter(clip.video_effect, clip.effect_intensity)} blur(${blurPx}px) brightness(${brightness.toFixed(2)})`,
     transform: 'scale(1.12)',
   }
 }
 
-function transitionProgress(clip: Clip): number | null {
-  const transition = clip.transition
-  if (!transition || transition.duration <= 0) return null
-  const elapsed = editor.playhead - clip.start
-  if (elapsed < 0 || elapsed >= transition.duration) return null
-  return Math.min(1, Math.max(0, elapsed / transition.duration))
+function outgoingTransitionFor(clip: Clip) {
+  const clipEnd = clip.start + clip.duration
+  for (const track of timeline.value.tracks) {
+    if (track.kind !== 'video' || track.hidden) continue
+    const idx = track.clips.findIndex((c) => c.id === clip.id)
+    if (idx < 0) continue
+    for (const other of track.clips) {
+      if (other.id === clip.id || !other.transition || other.transition.duration <= 0) continue
+      if (Math.abs(other.start - clipEnd) <= 0.12) return other.transition
+    }
+  }
+  return null
 }
 
 function transformCSS(clip: Clip): string {
@@ -302,29 +481,118 @@ function videoLayerStyle(clip: Clip): CSSProperties {
     mixBlendMode: blendCSS(clip.blend_mode) as CSSProperties['mixBlendMode'],
     transformOrigin: 'center center',
   }
-  const progress = transitionProgress(clip)
   let scaleFactor = 1
-  let slide = 0
-  if (progress !== null && clip.transition) {
-    const eased = 1 - Math.pow(1 - progress, 3)
-    switch (clip.transition.type) {
-      case 'pull_in':
-        scaleFactor = 1.18 - 0.18 * eased
-        style.opacity = clip.opacity * (0.35 + 0.65 * eased)
-        break
-      case 'slide_right':
-        slide = (1 - eased) * 100
-        break
-      case 'slide_left':
-        slide = -(1 - eased) * 100
-        break
+  let slideX = 0
+  let slideY = 0
+  let rotOffset = 0
+
+  // Phase B (Incoming): CapCut decelerating ease-out from the cut boundary
+  const inTrans = clip.transition
+  if (inTrans && inTrans.duration > 0) {
+    const inHalf = Math.min(Math.max(0.08, inTrans.duration * 0.58), clip.duration * 0.55)
+    const elapsed = editor.playhead - clip.start
+    if (elapsed >= 0 && elapsed < inHalf) {
+      const r = Math.min(1, Math.max(0, 1 - elapsed / inHalf))
+      const rQuad = r * r
+      switch (inTrans.type) {
+        case 'pull_in':
+          scaleFactor *= 1 + 0.28 * rQuad
+          break
+        case 'pull_out':
+          scaleFactor *= 1 + 0.34 * rQuad
+          break
+        case 'blink':
+          style.filter = `brightness(${(1 - rQuad).toFixed(3)})`
+          style.clipPath = `inset(${(38 * rQuad).toFixed(2)}% 0 ${(38 * rQuad).toFixed(2)}% 0)`
+          break
+        case 'flash':
+          scaleFactor *= 1 + 0.1 * rQuad
+          style.filter = `brightness(${(1 + 2.8 * rQuad).toFixed(3)}) contrast(${(1 - 0.35 * r).toFixed(3)})`
+          break
+        case 'fade':
+          style.filter = `brightness(${(1 - r).toFixed(3)})`
+          break
+        case 'slide_up':
+          scaleFactor *= 1 + 0.14 * rQuad
+          slideY += 42 * rQuad
+          break
+        case 'slide_down':
+          scaleFactor *= 1 + 0.14 * rQuad
+          slideY -= 42 * rQuad
+          break
+        case 'slide_left':
+          scaleFactor *= 1 + 0.14 * rQuad
+          slideX += 42 * rQuad
+          break
+        case 'slide_right':
+          scaleFactor *= 1 + 0.14 * rQuad
+          slideX -= 42 * rQuad
+          break
+        case 'spin_in':
+          scaleFactor *= 1 + 0.28 * rQuad
+          rotOffset -= 16 * rQuad
+          break
+      }
     }
   }
+
+  // Phase A (Outgoing): CapCut accelerating ease-in into the next adjacent clip's transition
+  const outTrans = outgoingTransitionFor(clip)
+  if (outTrans && outTrans.duration > 0) {
+    const outHalf = Math.min(Math.max(0.08, outTrans.duration * 0.52), clip.duration * 0.5)
+    const remToEnd = clip.start + clip.duration - editor.playhead
+    if (remToEnd >= 0 && remToEnd < outHalf) {
+      const u = Math.min(1, Math.max(0, 1 - remToEnd / outHalf))
+      const uQuad = u * u
+      switch (outTrans.type) {
+        case 'pull_in':
+          scaleFactor *= 1 + 0.36 * uQuad
+          break
+        case 'pull_out':
+          scaleFactor *= 1 + 0.18 * uQuad
+          break
+        case 'blink':
+          style.filter = `brightness(${(1 - uQuad).toFixed(3)})`
+          style.clipPath = `inset(${(38 * uQuad).toFixed(2)}% 0 ${(38 * uQuad).toFixed(2)}% 0)`
+          break
+        case 'flash':
+          scaleFactor *= 1 + 0.08 * uQuad
+          style.filter = `brightness(${(1 + 2.8 * uQuad).toFixed(3)}) contrast(${(1 - 0.35 * u).toFixed(3)})`
+          break
+        case 'fade':
+          style.filter = `brightness(${(1 - u).toFixed(3)})`
+          break
+        case 'slide_up':
+          scaleFactor *= 1 + 0.14 * uQuad
+          slideY -= 42 * uQuad
+          break
+        case 'slide_down':
+          scaleFactor *= 1 + 0.14 * uQuad
+          slideY += 42 * uQuad
+          break
+        case 'slide_left':
+          scaleFactor *= 1 + 0.14 * uQuad
+          slideX -= 42 * uQuad
+          break
+        case 'slide_right':
+          scaleFactor *= 1 + 0.14 * uQuad
+          slideX += 42 * uQuad
+          break
+        case 'spin_in':
+          scaleFactor *= 1 + 0.28 * uQuad
+          rotOffset += 16 * uQuad
+          break
+      }
+    }
+  }
+
   const value = transformAt(clip, editor.playhead)
+  const s = (value.scale * scaleFactor).toFixed(4)
   style.transform =
     `translate(${((value.x - 0.5) * 100).toFixed(3)}%, ${((value.y - 0.5) * 100).toFixed(3)}%) ` +
-    `translateX(${slide.toFixed(3)}%) scale(${(value.scale * scaleFactor).toFixed(4)}) ` +
-    `rotate(${value.rotation.toFixed(2)}deg)`
+    `translate(${slideX.toFixed(3)}%, ${slideY.toFixed(3)}%) scale(${s}) ` +
+    `rotate(${(value.rotation + rotOffset).toFixed(2)}deg)`
+  style.filter = [videoEffectFilter(clip.video_effect, clip.effect_intensity), style.filter].filter(Boolean).join(' ')
   return style
 }
 
@@ -414,15 +682,13 @@ function resetSelectedTransform() {
   editor.clearClipTransform(selection.trackId, selection.clipId)
 }
 
-function setAudioRef(id: string, el: HTMLAudioElement | null) {
-  if (el) {
-    audioRefs.set(id, el)
-    syncAll(true)
-  } else {
-    const existing = audioRefs.get(id)
-    existing?.pause()
-    audioRefs.delete(id)
+function onMediaReady(clip: Clip, el: EventTarget | null, isAudio = false, active = true) {
+  const media = el as HTMLMediaElement | null
+  if (!media) return
+  if (isAudio) {
+    media.volume = muted.value ? 0 : Math.max(0, Math.min(1, clip.volume))
   }
+  syncElement(media, clip, true, isAudio, active)
 }
 
 watch(
@@ -432,8 +698,8 @@ watch(
 )
 
 watch(
-  () => videoLayers.value.map((l) => l.clip.id).join(','),
-  () => nextTick(() => syncAll(true)),
+  () => videoLayers.value.map((l) => `${l.clip.id}:${l.active ? 1 : 0}`).join(','),
+  () => nextTick(() => syncAll(false)),
 )
 
 watch(
@@ -449,36 +715,55 @@ watch(
 </script>
 
 <template>
-  <section class="preview-panel">
+  <section ref="player" class="preview-panel" :class="{ expanded, 'window-preview': windowPreview }">
     <div ref="shell" class="preview-shell">
-      <div ref="stageEl" class="stage" :style="stageStyle" @click="editor.togglePlay()">
+      <div ref="stageEl" class="stage" :style="stageStyle" @pointerdown.capture="startPickedText" @click="editor.togglePlay()">
         <template v-for="layer in visualLayers" :key="`${layer.kind}-${layer.clip.id}`">
-          <video
-            v-if="layer.kind === 'video' && layer.asset && layer.clip.background_fill === 'blur'"
-            :ref="(el) => setBgVideoRef(layer.clip.id, el as HTMLVideoElement | null)"
+          <img
+            v-if="layer.kind === 'video' && layer.asset && layer.active && layer.clip.background_fill === 'blur'"
             class="stage-video stage-video-bg"
             :style="bgVideoLayerStyle(layer.clip)"
-            :src="assetUrl(project.id, layer.asset.id)"
-            muted
-            playsinline
-            @loadedmetadata="syncAll(true)"
-            @canplay="syncAll(true)"
+            :src="thumbUrl(project.id, layer.asset.id)"
+            alt=""
           />
           <video
             v-if="layer.kind === 'video' && layer.asset"
-            :ref="(el) => setVideoRef(layer.clip.id, el as HTMLVideoElement | null)"
+            :ref="bindVideoRef(layer.clip.id)"
             class="stage-video"
-            :style="videoLayerStyle(layer.clip)"
+            :style="
+              layer.active
+                ? videoLayerStyle(layer.clip)
+                : { opacity: 0, pointerEvents: 'none', visibility: 'hidden' }
+            "
             :src="assetUrl(project.id, layer.asset.id)"
-            muted
+            preload="auto"
+            :muted="!layer.active || videoClipVolume(layer.clip, layer.trackId) <= 0.0001"
             playsinline
-            @loadedmetadata="syncAll(true)"
-            @canplay="syncAll(true)"
+            @loadedmetadata="onMediaReady(layer.clip, $event.target, false, layer.active)"
           />
         </template>
 
+        <div
+          v-if="!expanded && selectedVideoLayer && selectedTransform"
+          class="transform-frame"
+          :style="frameStyle"
+          @pointerdown="beginTransformDrag($event, 'move')"
+          @click.stop
+        >
+          <button
+            v-for="corner in ['nw', 'ne', 'se', 'sw']"
+            :key="corner"
+            class="transform-handle"
+            :class="corner"
+            :title="`Skala ${Math.round((selectedTransform?.scale ?? 1) * 100)}%`"
+            @pointerdown.stop="beginTransformDrag($event, 'scale')"
+            @click.stop
+          />
+        </div>
+
         <OverlayPreview
-          :overlays="overlayItems"
+          :inert="expanded" :class="{ 'clean-overlay': expanded }"
+          :overlays="overlayItems" :draft="textDraft" @drag="beginTextDrag"
           :project="project"
           :project-id="project.id"
           :display-height="stageSize.height"
@@ -500,33 +785,21 @@ watch(
 
         <CaptionPreview
           :style="timeline.caption_style"
-          :clip="activeCaption"
+          v-for="item in activeCaptions" :key="item.clip.id"
+          :draft="textDraft" @drag="beginTextDrag"
+          :clip="item.clip" :track-id="item.trackId" :editable="!expanded"
           :display-height="stageSize.height"
           :playhead="editor.playhead"
         />
 
-        <div
-          v-if="selectedVideoLayer && selectedTransform"
-          class="transform-frame"
-          :style="frameStyle"
-          @pointerdown="beginTransformDrag($event, 'move')"
-          @click.stop
-        >
-          <button
-            v-for="corner in ['nw', 'ne', 'se', 'sw']"
-            :key="corner"
-            class="transform-handle"
-            :class="corner"
-            :title="`Skala ${Math.round((selectedTransform?.scale ?? 1) * 100)}%`"
-            @pointerdown.stop="beginTransformDrag($event, 'scale')"
-            @click.stop
-          />
-        </div>
-
-        <div class="stage-badge">{{ timecode(editor.playhead, project.fps) }}</div>
+        <template v-if="!expanded && textDraft?.mode === 'move'">
+          <div v-if="textDraft.x === 0.5" class="center-guide guide-x" aria-hidden="true" />
+          <div v-if="textDraft.y === 0.5" class="center-guide guide-y" aria-hidden="true" />
+        </template>
+        <div v-if="!expanded" class="stage-badge">{{ timecode(editor.playhead, project.fps) }}</div>
       </div>
 
-      <div v-if="selectedVideoLayer" class="stage-tools" @pointerdown.stop @click.stop>
+      <div v-if="!expanded && selectedVideoLayer" class="stage-tools" @pointerdown.stop @click.stop>
         <button
           class="stage-tool"
           :class="{ active: hasKeyframeHere, animated: keyframeCount > 0 }"
@@ -548,10 +821,10 @@ watch(
       <audio
         v-for="item in activeAudio"
         :key="item.clip.id"
-        :ref="(el) => setAudioRef(item.clip.id, el as HTMLAudioElement | null)"
+        :ref="bindAudioRef(item.clip.id)"
         :src="item.clip.asset_id ? assetUrl(project.id, item.clip.asset_id) : undefined"
         preload="auto"
-        @loadedmetadata="syncAll(true)"
+        @loadedmetadata="onMediaReady(item.clip, $event.target, true)"
       />
     </div>
 
@@ -573,12 +846,25 @@ watch(
       </div>
 
       <div class="transport-meta">
+        <label v-if="!expanded && visibleText.length" class="text-picker" title="Pilih teks di preview">
+          <Type :size="15" /><span>Pilih teks</span><ChevronDown :size="11" />
+          <select aria-label="Pilih teks di preview" :value="visibleText.some(item => item.clip.id === editor.selection?.clipId) ? editor.selection?.clipId : ''"
+            @pointerdown="editor.pause()" @keydown="editor.pause()" @change="selectPreviewText">
+            <option disabled value="">Pilih teks</option>
+            <option v-for="item in visibleText" :key="item.clip.id" :value="item.clip.id">
+              {{ editor.project?.timeline.tracks.find(t => t.id === item.trackId)?.name }} · {{ item.clip.text || item.clip.words?.map(w => w.word).join(' ') }}
+            </option>
+          </select>
+        </label>
         <span class="badge">{{ project.width }}×{{ project.height }}</span>
         <span class="badge">{{ Math.round(project.fps) }} fps</span>
-        <span class="badge accent">PREVIEW</span>
         <button class="icon-btn" :title="muted ? 'Nyalakan suara' : 'Bisukan preview'" @click="muted = !muted">
           <VolumeX v-if="muted" :size="16" />
           <Volume2 v-else :size="16" />
+        </button>
+        <button class="icon-btn" :title="expanded ? 'Keluar layar penuh' : 'Preview layar penuh'" :aria-pressed="expanded" @click="toggleFullscreen">
+          <Minimize v-if="expanded" :size="17" />
+          <Maximize v-else :size="17" />
         </button>
       </div>
     </div>
@@ -594,6 +880,16 @@ watch(
   background: #0d0d0d;
 }
 
+.window-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.expanded .stage { border: 0; border-radius: 0; }
+.clean-overlay :deep(.overlay-item.selected::after),
+.clean-overlay :deep(.overlay-handle) { display: none; }
+
 .preview-shell {
   position: relative;
   flex: 1;
@@ -601,7 +897,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 17px;
+  padding: 0;
   background: #050505;
   overflow: hidden;
 }
@@ -692,6 +988,17 @@ watch(
   background: var(--teal);
 }
 
+.center-guide {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--accent);
+  box-shadow: 0 0 1px 1px rgb(0 0 0 / 45%);
+}
+
+.guide-x { inset: 0 auto 0 50%; width: 1px; }
+.guide-y { inset: 50% 0 auto; height: 1px; }
+
 .stage-badge {
   position: absolute;
   right: 8px;
@@ -709,7 +1016,6 @@ watch(
 .transform-frame {
   position: absolute;
   inset: 0;
-  z-index: 5;
   border: 1px solid var(--accent);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55) inset;
   transform-origin: center center;
@@ -753,6 +1059,32 @@ watch(
   left: -6px;
   bottom: -6px;
   cursor: nesw-resize;
+}
+
+.text-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  white-space: nowrap;
+  font-size: 11px;
+}
+.text-picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text);
+}
+.text-picker:focus-within { outline: 1px solid var(--accent); }
+@container (max-width: 560px) {
+  .text-picker span, .transport-meta .badge { display: none; }
 }
 
 .stage-tools {
@@ -810,6 +1142,7 @@ watch(
 }
 
 .transport {
+  container-type: inline-size;
   flex-shrink: 0;
   height: 52px;
   display: flex;
@@ -865,5 +1198,9 @@ watch(
   display: flex;
   align-items: center;
   gap: 6px;
+}
+@container (max-width: 430px) {
+  .transport-meta .badge { display: none; }
+  .time-read { margin-left: 0; }
 }
 </style>

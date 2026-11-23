@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch, type CSSProperties } from 'vue'
+import { computed, onMounted, ref, watch, type CSSProperties } from 'vue'
+import type { PreviewTextPose } from '../lib/previewTextDrag'
 import { assetUrl } from '../api'
 import { useEditor } from '../stores/editor'
 import type { Asset, Clip, Project } from '../types'
@@ -7,6 +8,7 @@ import type { Asset, Clip, Project } from '../types'
 type OverlayItem = { clip: Clip; asset?: Asset; trackId: string }
 
 const props = defineProps<{
+  draft: (PreviewTextPose & { clipId: string }) | null
   overlays: OverlayItem[]
   project: Project
   projectId: string
@@ -14,80 +16,13 @@ const props = defineProps<{
 }>()
 
 const editor = useEditor()
-const layerEl = ref<HTMLElement | null>(null)
+const emit = defineEmits<{ drag: [event: PointerEvent, trackId: string, clip: Clip, mode: 'move' | 'scale'] }>()
 const videoRefs = ref<Record<string, HTMLVideoElement | null>>({})
 
 const selectedId = computed(() => editor.selection?.clipId ?? null)
 
 function isTextOverlay(item: OverlayItem): boolean {
   return !!item.clip.text?.trim()
-}
-
-type OverlayDrag = {
-  mode: 'move' | 'scale'
-  item: OverlayItem
-  rect: DOMRect
-  startX: number
-  startY: number
-  start: { x: number; y: number; scale: number }
-  center: { x: number; y: number }
-  startDistance: number
-}
-
-let overlayDrag: OverlayDrag | null = null
-
-function beginOverlayDrag(event: PointerEvent, item: OverlayItem, mode: 'move' | 'scale') {
-  if (!layerEl.value) return
-  const track = editor.project?.timeline.tracks.find((entry) => entry.id === item.trackId)
-  if (track?.locked) return
-  event.preventDefault()
-  event.stopPropagation()
-  editor.select(item.trackId, item.clip.id)
-
-  const rect = layerEl.value.getBoundingClientRect()
-  const start = { x: item.clip.x, y: item.clip.y, scale: item.clip.scale || 1 }
-  const center = { x: rect.left + start.x * rect.width, y: rect.top + start.y * rect.height }
-  overlayDrag = {
-    mode,
-    item,
-    rect,
-    startX: event.clientX,
-    startY: event.clientY,
-    start,
-    center,
-    startDistance: Math.max(1, Math.hypot(event.clientX - center.x, event.clientY - center.y)),
-  }
-  window.addEventListener('pointermove', onOverlayDragMove)
-  window.addEventListener('pointerup', onOverlayDragEnd, { once: true })
-}
-
-function onOverlayDragMove(event: PointerEvent) {
-  const drag = overlayDrag
-  if (!drag) return
-  if (drag.mode === 'move') {
-    const x = drag.start.x + (event.clientX - drag.startX) / drag.rect.width
-    const y = drag.start.y + (event.clientY - drag.startY) / drag.rect.height
-    editor.updateClip(
-      drag.item.trackId,
-      drag.item.clip.id,
-      { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) },
-      `overlay-move-${drag.item.clip.id}`,
-    )
-    return
-  }
-  const distance = Math.hypot(event.clientX - drag.center.x, event.clientY - drag.center.y)
-  const scale = (drag.start.scale * distance) / drag.startDistance
-  editor.updateClip(
-    drag.item.trackId,
-    drag.item.clip.id,
-    { scale: Math.min(3, Math.max(0.1, scale)) },
-    `overlay-scale-${drag.item.clip.id}`,
-  )
-}
-
-function onOverlayDragEnd() {
-  overlayDrag = null
-  window.removeEventListener('pointermove', onOverlayDragMove)
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -100,9 +35,10 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 function wrapperStyle(clip: Clip): CSSProperties {
+  const position = props.draft?.clipId === clip.id ? props.draft : clip
   return {
-    left: `${clip.x * 100}%`,
-    top: `${clip.y * 100}%`,
+    left: `${position.x * 100}%`,
+    top: `${position.y * 100}%`,
     transform: `translate(-50%, -50%) rotate(${clip.rotation}deg)`,
     opacity: clip.opacity,
     mixBlendMode: blendCss(clip.blend_mode) as CSSProperties['mixBlendMode'],
@@ -130,9 +66,10 @@ function blendCss(mode: string): string {
 function textStyle(clip: Clip) {
   const style = clip.style
   if (!style) return {}
-  const px = Math.max(6, style.font_size * (props.displayHeight / 1080) * (clip.scale || 1))
-  const stroke = Math.max(0, style.stroke_width * (props.displayHeight / 1080) * (clip.scale || 1))
-  const shadow = Math.max(0, style.shadow * (props.displayHeight / 1080) * (clip.scale || 1))
+  const scale = props.draft?.clipId === clip.id ? props.draft.scale : (clip.scale || 1)
+  const px = Math.max(6, style.font_size * (props.displayHeight / 1080) * scale)
+  const stroke = Math.max(0, style.stroke_width * (props.displayHeight / 1080) * scale)
+  const shadow = Math.max(0, style.shadow * (props.displayHeight / 1080) * scale)
   return {
     fontFamily: `"${style.font_family}", Arial, sans-serif`,
     fontSize: `${px}px`,
@@ -200,28 +137,19 @@ onMounted(() => {
   for (const overlay of props.overlays) syncVideo(overlay.clip, videoRefs.value[overlay.clip.id] ?? null)
 })
 
-onBeforeUnmount(() => {
-  overlayDrag = null
-  window.removeEventListener('pointermove', onOverlayDragMove)
-  window.removeEventListener('pointerup', onOverlayDragEnd)
-})
-
-function startMove(event: PointerEvent, item: OverlayItem) {
-  if (isTextOverlay(item)) beginOverlayDrag(event, item, 'move')
-}
-
 const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() || o.asset))
 </script>
 
 <template>
-  <div ref="layerEl" class="overlay-layer">
+  <div class="overlay-layer">
     <div
       v-for="overlay in visible"
       :key="overlay.clip.id"
       class="overlay-item"
       :class="{ text: isTextOverlay(overlay), selected: selectedId === overlay.clip.id }"
+      :data-preview-text="isTextOverlay(overlay) ? overlay.clip.id : undefined"
       :style="wrapperStyle(overlay.clip)"
-      @pointerdown="startMove($event, overlay)"
+      @pointerdown="isTextOverlay(overlay) && emit('drag', $event, overlay.trackId, overlay.clip, 'move')"
       @click.stop
     >
       <div v-if="overlay.clip.text?.trim()" class="overlay-text" :style="textStyle(overlay.clip)">
@@ -242,14 +170,14 @@ const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() 
         muted
         playsinline
       />
-      <template v-if="isTextOverlay(overlay) && selectedId === overlay.clip.id">
+      <template v-if="isTextOverlay(overlay) && selectedId === overlay.clip.id && !editor.selectedTrack?.locked">
         <button
           v-for="corner in ['nw', 'ne', 'se', 'sw']"
           :key="corner"
           class="overlay-handle"
           :class="corner"
           title="Tarik untuk scale teks"
-          @pointerdown.stop.prevent="beginOverlayDrag($event, overlay, 'scale')"
+          @pointerdown.stop.prevent="emit('drag', $event, overlay.trackId, overlay.clip, 'scale')"
           @click.stop
         />
       </template>
@@ -274,6 +202,8 @@ const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() 
 }
 
 .overlay-item.text {
+  width: max-content;
+  max-width: 90%;
   pointer-events: auto;
   cursor: grab;
   touch-action: none;

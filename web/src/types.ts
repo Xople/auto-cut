@@ -1,7 +1,18 @@
+export type LibraryTool = 'media' | 'text' | 'transitions' | 'effects'
 export type TrackKind = 'video' | 'audio' | 'overlay' | 'caption'
 export type AssetKind = 'video' | 'audio' | 'image'
 export type CutReason = 'silence' | 'filler' | 'retake' | 'off_topic' | 'keep'
-export type TransitionType = 'pull_in' | 'slide_right' | 'slide_left'
+export type TransitionType =
+  | 'pull_in'
+  | 'pull_out'
+  | 'blink'
+  | 'flash'
+  | 'fade'
+  | 'slide_up'
+  | 'slide_down'
+  | 'slide_right'
+  | 'slide_left'
+  | 'spin_in'
 
 export interface Transition {
   type: TransitionType
@@ -9,12 +20,19 @@ export interface Transition {
 }
 
 export const TRANSITIONS: Array<{ value: TransitionType; label: string; hint: string }> = [
-  { value: 'pull_in', label: 'Pull In', hint: 'Zoom masuk dari layar penuh' },
-  { value: 'slide_right', label: 'Right', hint: 'Masuk bergeser dari kanan' },
-  { value: 'slide_left', label: 'Left', hint: 'Masuk bergeser dari kiri' },
+  { value: 'pull_in', label: 'Pull In', hint: 'Zoom masuk cepat dari 1.22× ke normal' },
+  { value: 'pull_out', label: 'Pull Out', hint: 'Zoom membesar dari 0.78× ke layar penuh' },
+  { value: 'blink', label: 'Blink', hint: 'Efek kedipan mata / shutter gelap di awal scene' },
+  { value: 'flash', label: 'Flash', hint: 'Kilatan cahaya kamera putih terang' },
+  { value: 'fade', label: 'Fade', hint: 'Cross-dissolve halus dari transparan' },
+  { value: 'slide_up', label: 'Swipe Up', hint: 'Geser vertikal dari bawah ke atas (gaya Shorts)' },
+  { value: 'slide_down', label: 'Swipe Down', hint: 'Geser vertikal dari atas ke bawah' },
+  { value: 'slide_right', label: 'Slide Right', hint: 'Masuk bergeser dari kanan' },
+  { value: 'slide_left', label: 'Slide Left', hint: 'Masuk bergeser dari kiri' },
+  { value: 'spin_in', label: 'Spin In', hint: 'Whip-zoom masuk dengan rotasi dinamis' },
 ]
 
-export const DEFAULT_TRANSITION_DURATION = 0.6
+export const DEFAULT_TRANSITION_DURATION = 0.38
 
 export interface WordTiming {
   word: string
@@ -48,6 +66,24 @@ export interface TransformKeyframe {
   rotation: number
 }
 
+export type VideoEffect = 'mono' | 'sepia' | 'vivid'
+
+export const VIDEO_EFFECTS = [
+  { value: 'mono', label: 'Monokrom' },
+  { value: 'sepia', label: 'Sepia' },
+  { value: 'vivid', label: 'Vivid' },
+] as const
+
+export function videoEffectFilter(effect?: VideoEffect, intensity = 1): string {
+  const amount = Math.max(0, Math.min(1, intensity))
+  switch (effect) {
+    case 'mono': return `grayscale(${amount})`
+    case 'sepia': return `sepia(${amount})`
+    case 'vivid': return `saturate(${1 + 0.7 * amount})`
+    default: return ''
+  }
+}
+
 export interface Clip {
   id: string
   asset_id?: string
@@ -69,11 +105,18 @@ export interface Clip {
   speed: number
   linked_id?: string
   words?: WordTiming[]
+  caption_position?: { x: number; y: number }
   transition?: Transition | null
   keyframes?: TransformKeyframe[]
+  video_effect?: VideoEffect
+  effect_intensity?: number
   background_fill?: '' | 'black' | 'blur'
   background_blur?: number
   background_dim?: number
+}
+
+export function captionPosition(clip: Clip, style: CaptionStyle) {
+  return clip.caption_position ?? { x: 0.5, y: style.position_y > 0 ? Math.min(0.98, style.position_y) : 0.82 }
 }
 
 export interface Track {

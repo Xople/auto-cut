@@ -51,8 +51,6 @@ func writeASS(path string, clips []models.Clip, style models.CaptionStyle, width
 	if positionY > 0.98 {
 		positionY = 0.98
 	}
-	posX := width / 2
-	posY := int(float64(height) * positionY)
 
 	sorted := make([]models.Clip, 0, len(clips))
 	for _, clip := range clips {
@@ -101,6 +99,11 @@ func writeASS(path string, clips []models.Clip, style models.CaptionStyle, width
 	sb.WriteString("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
 
 	for _, clip := range sorted {
+		posX, posY := width/2, int(float64(height)*positionY)
+		if pos := clip.CaptionPosition; pos != nil {
+			posX = int(float64(width) * clamp01(pos.X))
+			posY = int(float64(height) * clamp01(pos.Y))
+		}
 		words := clip.Words
 		if len(words) > 0 && style.Highlight {
 			for active, word := range words {

@@ -1061,6 +1061,9 @@ watch(
           <button @click="runMenuAction('split')">Potong di playhead</button>
           <template v-if="menuCanTransition">
             <div class="menu-label">Transisi masuk</div>
+            <button @click="editor.applyTransitionToAllScenes('variety'); contextMenu = null">
+              ✨ Auto variasi semua scene
+            </button>
             <button
               v-for="transition in TRANSITIONS"
               :key="transition.value"
@@ -1069,6 +1072,12 @@ watch(
               @click="applyTransition(transition.value)"
             >
               {{ transition.label }}
+            </button>
+            <button
+              v-if="menuClip?.clip.transition"
+              @click="editor.applyTransitionToAllScenes(menuClip.clip.transition.type, menuClip.clip.transition.duration); contextMenu = null"
+            >
+              Terapkan {{ menuClip.clip.transition.type }} ke semua scene
             </button>
             <button v-if="menuClip?.clip.transition" @click="applyTransition('none')">Tanpa transisi</button>
           </template>
@@ -1106,6 +1115,7 @@ watch(
 
 <style scoped>
 .timeline-panel {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1690,5 +1700,13 @@ watch(
 :global(body.asset-dragging) .lane:hover {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+@container (max-width: 830px) {
+  .toolbar-info .badge:not(.accent, .danger) { display: none; }
+  .zoom-block { gap: 3px; }
+  .zoom-block input[type='range'] { width: 62px; }
+}
+@container (max-width: 660px) {
+  .timeline-toolbar { height: auto; min-height: 40px; flex-wrap: wrap; padding-block: 3px; }
 }
 </style>

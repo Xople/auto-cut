@@ -2,12 +2,13 @@
 import { computed, ref, watch } from 'vue'
 import { Captions, Diamond, Film, Layers, Music, RotateCcw, Sparkles, Trash2, Wand2 } from 'lucide-vue-next'
 import { useEditor } from '../stores/editor'
-import { BLEND_MODES, defaultTextStyle, TRANSITIONS, type TransitionType } from '../types'
+import { BLEND_MODES, defaultTextStyle, captionPosition, TRANSITIONS, VIDEO_EFFECTS } from '../types'
 import { formatSecondsShort } from '../lib/format'
 import { keyframeAt, transformAt } from '../lib/transform'
 import FontPicker from './FontPicker.vue'
 
 const emit = defineEmits<{
+  (e: 'open-library', tool: 'transitions' | 'effects'): void
   (e: 'open-autocut'): void
   (e: 'generate-captions'): void
 }>()
@@ -20,9 +21,9 @@ const clip = computed(() => selected.value?.clip ?? null)
 const track = computed(() => selected.value?.track ?? null)
 
 watch(
-  () => selected.value?.track.id,
+  () => editor.selection,
   () => {
-    if (track.value?.kind === 'caption') tab.value = 'caption'
+    if (track.value) tab.value = track.value.kind === 'caption' ? 'caption' : 'clip'
   },
 )
 
@@ -42,6 +43,15 @@ const videoKeyframeHere = computed(() => {
   return !!keyframeAt(clip.value, editor.playhead)
 })
 const videoKeyframeCount = computed(() => clip.value?.keyframes?.length ?? 0)
+
+const captionAnchor = computed(() => clip.value && editor.project
+  ? captionPosition(clip.value, editor.project.timeline.caption_style)
+  : { x: 0.5, y: 0.82 })
+
+function setCaptionCoordinate(axis: 'x' | 'y', event: Event) {
+  if (!isCaption.value || track.value?.locked) return
+  update({ caption_position: { ...captionAnchor.value, [axis]: num(event) / 100 } }, 'caption-' + axis)
+}
 
 function num(event: Event): number {
   return Number((event.target as HTMLInputElement).value)
@@ -86,11 +96,6 @@ function updateCaption(patch: Record<string, unknown>, key = 'cap') {
   editor.updateCaptionStyle(patch as never, `${key}-caption`)
 }
 
-function setTransition(type: TransitionType | 'none') {
-  if (!clip.value) return
-  editor.setClipTransition(type, undefined, clip.value.id)
-}
-
 function setTransitionDuration(duration: number) {
   if (!clip.value?.transition || !track.value) return
   const limit = Math.max(0.1, Math.min(3, clip.value.duration))
@@ -103,7 +108,7 @@ function setTransitionDuration(duration: number) {
         duration: Math.min(limit, Math.max(0.1, duration)),
       },
     },
-    'transition',
+    `transition-duration-${clip.value.id}`,
   )
 }
 
@@ -180,26 +185,11 @@ function trackIcon() {
           </div>
 
           <template v-if="asset?.kind === 'video' && track.kind === 'video'">
-            <div class="section-title">Transisi masuk</div>
-            <div class="transition-grid">
-              <button
-                v-for="transition in TRANSITIONS"
-                :key="transition.value"
-                class="transition-btn"
-                :class="{ active: clip.transition?.type === transition.value }"
-                :title="transition.hint"
-                @click="setTransition(transition.value)"
-              >
-                {{ transition.label }}
-              </button>
-              <button
-                class="transition-btn"
-                :class="{ active: !clip.transition }"
-                @click="setTransition('none')"
-              >
-                Tanpa
-              </button>
-            </div>
+            <div class="section-title">Tampilan clip</div>
+            <button class="library-link" @click="emit('open-library', 'transitions')">
+              <span>Transisi masuk</span>
+              <strong>{{ TRANSITIONS.find(item => item.value === clip?.transition?.type)?.label ?? 'Tanpa' }} ›</strong>
+            </button>
             <div v-if="clip.transition" class="field">
               <div class="field-label">
                 <span>Durasi transisi</span>
@@ -207,13 +197,24 @@ function trackIcon() {
               </div>
               <input
                 type="range"
-                min="0.2"
-                max="3"
+                aria-label="Durasi transisi"
+                :disabled="track.locked"
+                min="0.1"
+                :max="Math.max(0.1, Math.min(3, clip.duration))"
                 step="0.05"
                 :value="clip.transition.duration"
                 @input="setTransitionDuration(num($event))"
               />
             </div>
+            <button class="library-link" @click="emit('open-library', 'effects')">
+              <span>Efek warna</span>
+              <strong>{{ VIDEO_EFFECTS.find(item => item.value === clip?.video_effect)?.label ?? 'Asli' }} ›</strong>
+            </button>
+            <label v-if="clip.video_effect" class="field">
+              <span class="field-label"><span>Intensitas efek</span><span class="value">{{ Math.round((clip.effect_intensity ?? 1) * 100) }}%</span></span>
+              <input type="range" min="0" max="100" :disabled="track.locked" :value="(clip.effect_intensity ?? 1) * 100"
+                @input="update({ effect_intensity: num($event) / 100 }, 'effect-intensity')" />
+            </label>
             <div class="divider" />
           </template>
 
@@ -326,7 +327,7 @@ function trackIcon() {
                 <FontPicker
                   :model-value="clip.style?.font_family ?? 'Arial'"
                   :fonts="editor.fonts"
-                  @update:model-value="updateStyle({ font_family: $event }, 'font')"
+                  @update:model-value="updateStyle({ font_family: $event, font_file: '' }, 'font')"
                 />
                 <div class="hint">Pilih 17 keluarga Google Fonts (OFL, aman komersial) atau font sistem.</div>
               </div>
@@ -464,6 +465,20 @@ function trackIcon() {
       </template>
 
       <template v-else>
+        <template v-if="isCaption && clip">
+          <div class="section-title">Caption terpilih</div>
+          <p class="caption-excerpt">{{ clip.text || clip.words?.map(w => w.word).join(' ') }}</p>
+          <div class="grid-2">
+            <label v-for="axis in (['x', 'y'] as const)" :key="axis" class="field">
+              <span class="field-label">Posisi {{ axis.toUpperCase() }} <span class="value">{{ Math.round(captionAnchor[axis] * 100) }}%</span></span>
+              <input type="range" min="0" max="100" :disabled="track?.locked" :value="captionAnchor[axis] * 100"
+                @input="setCaptionCoordinate(axis, $event)" />
+            </label>
+          </div>
+          <button v-if="clip.caption_position" class="btn small" :disabled="track?.locked"
+            @click="update({ caption_position: undefined })">Pakai posisi global</button>
+          <div class="divider" />
+        </template>
         <div class="section-title">
           <span>Caption Style</span>
           <span class="badge accent">global</span>
@@ -474,7 +489,7 @@ function trackIcon() {
           <FontPicker
             :model-value="editor.project?.timeline.caption_style.font_family ?? 'Arial'"
             :fonts="editor.fonts"
-            @update:model-value="updateCaption({ font_family: $event }, 'font')"
+            @update:model-value="updateCaption({ font_family: $event, font_file: '' }, 'font')"
           />
           <div class="hint">Pilih 17 keluarga Google Fonts (OFL, aman komersial) atau font sistem.</div>
         </div>
@@ -680,6 +695,11 @@ function trackIcon() {
 </template>
 
 <style scoped>
+.caption-excerpt { margin: 0 0 10px; overflow-wrap: anywhere; }
+.library-link { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border: 0; background: transparent; color: var(--muted); }
+.library-link strong { color: var(--text); font-weight: 550; }
+.library-link:hover strong { color: var(--accent); }
+
 .props-panel {
   display: flex;
   flex-direction: column;
@@ -822,28 +842,6 @@ function trackIcon() {
   display: flex;
   gap: 7px;
   margin-bottom: 14px;
-}
-
-.transition-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.transition-btn {
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #0d0d0d;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.transition-btn.active {
-  border-color: #6b6b6b;
-  background: var(--panel-3);
-  color: var(--text);
 }
 
 .keyframe-row {

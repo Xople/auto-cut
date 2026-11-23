@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { blendCSS, type CaptionStyle, type Clip } from '../types'
+import { useEditor } from '../stores/editor'
+import type { PreviewTextPose } from '../lib/previewTextDrag'
+import { blendCSS, captionPosition, type CaptionStyle, type Clip } from '../types'
 
 const props = defineProps<{
   style: CaptionStyle
-  clip: Clip | null
+  clip: Clip
+  trackId: string
+  editable: boolean
+  draft: (PreviewTextPose & { clipId: string }) | null
   displayHeight: number
   playhead: number
 }>()
 
+const editor = useEditor()
+const emit = defineEmits<{ drag: [event: PointerEvent, trackId: string, clip: Clip] }>()
+const selected = computed(() => props.editable && editor.selection?.clipId === props.clip.id)
 const activeWord = computed(() => {
   const clip = props.clip
   if (!clip?.words?.length) return -1
@@ -55,9 +63,11 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 const containerStyle = computed(() => {
+  const position = props.draft?.clipId === props.clip.id ? props.draft : captionPosition(props.clip, props.style)
   const bgAlpha = props.style.background_alpha ?? 0
   return {
-    top: `${props.style.position_y * 100}%`,
+    left: `${position.x * 100}%`,
+    top: `${position.y * 100}%`,
     opacity: props.style.opacity,
     mixBlendMode: blendCSS(props.style.blend_mode) as any,
     fontFamily: `"${props.style.font_family}", Arial, sans-serif`,
@@ -71,7 +81,6 @@ const containerStyle = computed(() => {
     backgroundColor: bgAlpha > 0 ? hexToRgba(props.style.background_color ?? '#000000', bgAlpha) : 'transparent',
     padding: bgAlpha > 0 ? `${Math.round(fontSize.value * 0.18)}px ${Math.round(fontSize.value * 0.38)}px` : '0',
     borderRadius: bgAlpha > 0 ? `${Math.round(fontSize.value * 0.16)}px` : '0',
-    width: bgAlpha > 0 ? 'auto' : '90%',
     maxWidth: '90%',
   }
 })
@@ -84,8 +93,9 @@ const words = computed(() => {
 </script>
 
 <template>
-  <div v-if="clip" class="caption-layer">
-    <div class="caption-line" :style="containerStyle">
+  <div class="caption-layer" :inert="!editable">
+    <div class="caption-line" :data-preview-text="clip.id" :class="{ editable, selected }" :style="containerStyle"
+      @pointerdown="editable && emit('drag', $event, trackId, clip)" @click.stop>
       <template v-if="words.length">
         <span
           v-for="(word, index) in words"
@@ -110,14 +120,21 @@ const words = computed(() => {
 
 .caption-line {
   position: absolute;
-  left: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
+  width: max-content;
   text-align: center;
   line-height: 1.2;
   letter-spacing: 0.01em;
   white-space: pre-wrap;
 }
+
+.caption-line.editable {
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+}
+.caption-line.editable:active { cursor: grabbing; }
+.caption-line.selected { outline: 1px dashed var(--accent); outline-offset: 3px; }
 
 .word {
   display: inline-block;

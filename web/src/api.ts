@@ -139,6 +139,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ replace }),
     }),
+  syncTransitions: (
+    id: string,
+    payload: { mode?: string; duration?: number; include_first?: boolean; with_sfx?: boolean } = {},
+  ) =>
+    request<{ project: Project; assets: Asset[]; clips_updated: number; sfx_count: number }>(
+      `/api/projects/${id}/transitions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    ),
 
   startExport: (id: string, settings: ExportSettings) =>
     request<ExportJob>(`/api/projects/${id}/export`, {
@@ -150,8 +161,8 @@ export const api = {
   fonts: () => request<Font[]>('/api/fonts'),
 }
 
-export function assetUrl(projectId: string, assetId: string): string {
-  return url(`/api/projects/${projectId}/assets/${assetId}/file`)
+export function assetUrl(projectId: string, assetId: string, extra?: Record<string, string>): string {
+  return url(`/api/projects/${projectId}/assets/${assetId}/file`, extra)
 }
 
 export function thumbUrl(projectId: string, assetId: string): string {

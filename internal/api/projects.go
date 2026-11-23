@@ -409,6 +409,9 @@ func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) 
 
 	var sources []models.Clip
 	for _, track := range p.Timeline.Tracks {
+		if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+			continue
+		}
 		if track.Kind == models.TrackAudio || track.Kind == models.TrackVideo {
 			sources = append(sources, track.Clips...)
 		}
@@ -462,6 +465,68 @@ func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) 
 		"project":           s.attachLastExport(p),
 		"caption_count":     len(generated),
 		"replaced_existing": replace,
+	})
+}
+
+func (s *Server) handleApplyProjectTransitions(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("id")
+	var body struct {
+		Mode         string  `json:"mode"`
+		Duration     float64 `json:"duration"`
+		IncludeFirst bool    `json:"include_first"`
+		WithSFX      *bool   `json:"with_sfx"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	p, err := s.projects.Get(projectID)
+	if err != nil {
+		http.Error(w, "Project not found", http.StatusNotFound)
+		return
+	}
+
+	withSFX := true
+	if body.WithSFX != nil {
+		withSFX = *body.WithSFX
+	}
+
+	var (
+		clipsUpdated int
+		sfxCount     int
+		scenes       []map[string]any
+	)
+	if strings.TrimSpace(body.Mode) != "" {
+		clipsUpdated, sfxCount, scenes, err = s.projects.ApplySceneTransitions(
+			projectID,
+			&p.Timeline,
+			body.Mode,
+			body.Duration,
+			body.IncludeFirst,
+			withSFX,
+		)
+	} else {
+		sfxCount, scenes, err = s.projects.SyncTransitionSFXTrack(projectID, &p.Timeline, "")
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	models.NormalizeTimeline(&p.Timeline)
+	if err := models.ValidateTimeline(p.Timeline); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := s.projects.SaveTimeline(projectID, &p.Timeline); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	assets, _ := s.projects.Assets(projectID)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"project":       s.attachLastExport(p),
+		"assets":        assets,
+		"clips_updated": clipsUpdated,
+		"sfx_count":     sfxCount,
+		"scenes":        scenes,
 	})
 }
 

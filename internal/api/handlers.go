@@ -111,6 +111,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/projects/{id}/analyze/events", s.handleAnalyzeEvents)
 	s.mux.HandleFunc("POST /api/projects/{id}/autocut/apply", s.handleApplyCuts)
 	s.mux.HandleFunc("POST /api/projects/{id}/captions", s.handleGenerateCaptions)
+	s.mux.HandleFunc("POST /api/projects/{id}/transitions", s.handleApplyProjectTransitions)
 
 	s.mux.HandleFunc("POST /api/projects/{id}/export", s.handleStartExport)
 	s.mux.HandleFunc("GET /api/projects/{id}/export/events", s.handleExportEvents)

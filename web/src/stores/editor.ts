@@ -529,7 +529,7 @@ export const useEditor = defineStore('editor', () => {
     const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
     const clip = track?.clips.find((c) => c.id === clipId)
     if (!clip) return
-    if (!historyKey) pushHistory()
+    pushHistory(historyKey)
     Object.assign(clip, patch)
     playlistChanged()
   }
@@ -607,11 +607,39 @@ export const useEditor = defineStore('editor', () => {
     scheduleSave()
   }
 
+  let transitionRequest = 0
+
+  function syncTransitionSFXFromBackend() {
+    const current = project.value
+    if (!current) return
+    const request = ++transitionRequest
+    const snapshot = JSON.stringify(current.timeline)
+    // The SFX endpoint also writes the timeline. Order it with autosaves.
+    saveChain = flushSave().then(async () => {
+      if (request !== transitionRequest || project.value !== current || saveState.value === 'error') return
+      try {
+        const res = await api.syncTransitions(current.id, { with_sfx: true })
+        if (request !== transitionRequest || project.value !== current) return
+        if (JSON.stringify(current.timeline) !== snapshot) {
+          // A slider, font edit, or undo landed while the sidecar was working.
+          // Save that edit and regenerate its cues before adopting the response.
+          scheduleSave()
+          syncTransitionSFXFromBackend()
+          return
+        }
+        project.value = res.project
+        if (res.assets) assets.value = res.assets
+      } catch {
+        notify('Audio transisi belum dapat disinkronkan.', 'info')
+      }
+    })
+  }
+
   function setClipTransition(type: TransitionType | 'none', duration?: number, clipId?: string) {
     const entries = clipId
       ? [locateClip(clipId)].filter((entry): entry is { track: Track; clip: Clip } => !!entry)
       : selectedEntries.value
-    const targets = entries.filter(({ track, clip }) => track.kind === 'video' && !!clip.asset_id)
+    const targets = entries.filter(({ track, clip }) => !track.locked && track.kind === 'video' && !!clip.asset_id)
     if (targets.length === 0) {
       notify('Pilih clip video dulu untuk menambah transisi.', 'info')
       return
@@ -627,7 +655,65 @@ export const useEditor = defineStore('editor', () => {
         clip.transition = { type, duration: Math.min(limit, Math.max(0.1, wanted)) }
       }
     }, 'transition')
-    notify(type === 'none' ? 'Transisi dihapus.' : 'Transisi diterapkan.', 'success')
+    void syncTransitionSFXFromBackend()
+    notify(type === 'none' ? 'Transisi dihapus.' : 'Transisi CapCut + SFX diterapkan.', 'success')
+  }
+
+  const VARIETY_TRANSITIONS: TransitionType[] = [
+    'pull_in',
+    'blink',
+    'slide_up',
+    'flash',
+    'pull_out',
+    'spin_in',
+    'slide_left',
+    'slide_right',
+  ]
+
+  function applyTransitionToAllScenes(
+    mode: TransitionType | 'variety' | 'none' = 'variety',
+    duration = DEFAULT_TRANSITION_DURATION,
+    includeFirst = false,
+  ) {
+    const tl = project.value?.timeline
+    if (!tl) return
+    let count = 0
+    mutate(() => {
+      for (const track of tl.tracks) {
+        if (track.kind !== 'video' || track.locked) continue
+        const sorted = [...track.clips].sort((a, b) => a.start - b.start)
+        let idx = 0
+        for (const clip of sorted) {
+          if (!clip.asset_id) continue
+          if (!includeFirst && clip.start < 0.05) {
+            clip.transition = null
+            continue
+          }
+          if (mode === 'none') {
+            clip.transition = null
+            count++
+            continue
+          }
+          const tType: TransitionType =
+            mode === 'variety' ? VARIETY_TRANSITIONS[idx % VARIETY_TRANSITIONS.length] : mode
+          const limit = Math.max(0.1, Math.min(3, clip.duration * 0.5))
+          clip.transition = {
+            type: tType,
+            duration: Math.min(limit, Math.max(0.1, duration)),
+          }
+          idx++
+          count++
+        }
+      }
+    }, 'transition-all')
+    void syncTransitionSFXFromBackend()
+    if (mode === 'none') {
+      notify(`Transisi & SFX dihapus dari ${count} scene.`, 'info')
+    } else if (mode === 'variety') {
+      notify(`Transisi CapCut variasi + Impact SFX diterapkan ke ${count} scene.`, 'success')
+    } else {
+      notify(`Transisi ${mode} + Impact SFX diterapkan ke ${count} scene.`, 'success')
+    }
   }
 
   function uniqueClipId(suffix = ''): string {
@@ -920,9 +1006,13 @@ export const useEditor = defineStore('editor', () => {
     splitClipAt(targetTrack.id, target.id, t)
   }
 
-  function addTextOverlay(text = 'Teks baru') {
+  function addTextOverlay(text = 'Teks baru', style: Partial<NonNullable<Clip['style']>> = {}) {
     const track = trackByKind('overlay')
     if (!project.value) return
+    if (track?.locked) {
+      notify('Track overlay terkunci.', 'info')
+      return
+    }
     if (!track) {
       notify('Track overlay tidak tersedia.', 'error')
       return
@@ -933,11 +1023,12 @@ export const useEditor = defineStore('editor', () => {
       in: 0,
       out: 3,
       text,
-      style: defaultTextStyle(),
+      style: { ...defaultTextStyle(), ...style },
     })
     mutate(() => track.clips.push(clip))
     selection.value = { trackId: track.id, clipId: clip.id }
     selectionIds.value = [clip.id]
+    return clip
   }
 
   function nextTrackName(kind: TrackKind): string {
@@ -1237,6 +1328,7 @@ export const useEditor = defineStore('editor', () => {
     toggleClipKeyframe,
     clearClipTransform,
     setClipTransition,
+    applyTransitionToAllScenes,
     findCollision,
     deleteSelected,
     copySelected,

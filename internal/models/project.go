@@ -103,7 +103,8 @@ type Clip struct {
 	FadeOut float64 `json:"fade_out"`
 
 	// Caption word timings in timeline seconds, used for karaoke highlight.
-	Words []WordTiming `json:"words,omitempty"`
+	Words           []WordTiming     `json:"words,omitempty"`
+	CaptionPosition *CaptionPosition `json:"caption_position,omitempty"`
 
 	// Transition plays at the start of the clip, over the layer below it.
 	Transition *Transition `json:"transition,omitempty"`
@@ -111,6 +112,8 @@ type Clip struct {
 	// Keyframes animate the transform above. Time is relative to the clip start.
 	Keyframes []TransformKeyframe `json:"keyframes,omitempty"`
 
+	VideoEffect     string   `json:"video_effect,omitempty"`
+	EffectIntensity *float64 `json:"effect_intensity,omitempty"`
 	// BackgroundFill controls how aspect-ratio bars are filled ("black" or "blur").
 	BackgroundFill string  `json:"background_fill,omitempty"`
 	BackgroundBlur float64 `json:"background_blur,omitempty"`
@@ -136,8 +139,15 @@ type TransformKeyframe struct {
 // Transition kinds supported by the timeline.
 const (
 	TransitionPullIn     = "pull_in"
+	TransitionPullOut    = "pull_out"
+	TransitionBlink      = "blink"
+	TransitionFlash      = "flash"
+	TransitionFade       = "fade"
 	TransitionSlideRight = "slide_right"
 	TransitionSlideLeft  = "slide_left"
+	TransitionSlideUp    = "slide_up"
+	TransitionSlideDown  = "slide_down"
+	TransitionSpinIn     = "spin_in"
 )
 
 // Transition is a visual entrance effect at a clip's start.
@@ -167,21 +177,27 @@ type TextStyle struct {
 	BackgroundAlpha float64 `json:"background_alpha"`
 }
 
+// CaptionPosition overrides the project caption anchor for one clip.
+type CaptionPosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 // CaptionStyle is the global caption look for the project.
 type CaptionStyle struct {
-	FontFamily     string  `json:"font_family"`
-	FontFile       string  `json:"font_file"`
-	FontSize       int     `json:"font_size"`
-	Bold           bool    `json:"bold"`
-	Italic         bool    `json:"italic"`
-	Color          string  `json:"color"`
-	HighlightColor string  `json:"highlight_color"`
-	StrokeWidth    float64 `json:"stroke_width"`
-	StrokeColor    string  `json:"stroke_color"`
-	Shadow         float64 `json:"shadow"`
-	ShadowColor    string  `json:"shadow_color"`
-	Opacity        float64 `json:"opacity"`
-	BlendMode      string  `json:"blend_mode"`
+	FontFamily      string  `json:"font_family"`
+	FontFile        string  `json:"font_file"`
+	FontSize        int     `json:"font_size"`
+	Bold            bool    `json:"bold"`
+	Italic          bool    `json:"italic"`
+	Color           string  `json:"color"`
+	HighlightColor  string  `json:"highlight_color"`
+	StrokeWidth     float64 `json:"stroke_width"`
+	StrokeColor     string  `json:"stroke_color"`
+	Shadow          float64 `json:"shadow"`
+	ShadowColor     string  `json:"shadow_color"`
+	Opacity         float64 `json:"opacity"`
+	BlendMode       string  `json:"blend_mode"`
 	PositionY       float64 `json:"position_y"`
 	Uppercase       bool    `json:"uppercase"`
 	Highlight       bool    `json:"highlight"`

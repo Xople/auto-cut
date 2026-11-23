@@ -1,14 +1,65 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { ArrowLeft, Captions, Download, Redo2, Scissors, Undo2, Wand2 } from 'lucide-vue-next'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { ArrowLeft, Captions, Check, ChevronDown, Download, LayoutPanelTop, PanelLeft, PanelRight, RotateCcw, Redo2, Scissors, Undo2, Wand2 } from 'lucide-vue-next'
 import { useEditor } from '../stores/editor'
 
+import { layouts, type Layout } from '../lib/workspaceLayout'
+
+const props = defineProps<{ layout: Layout }>()
 const emit = defineEmits<{
+  (e: 'layout', layout: Layout): void
+  (e: 'reset-layout'): void
   (e: 'back'): void
   (e: 'open-autocut'): void
   (e: 'open-export'): void
   (e: 'generate-captions'): void
 }>()
+
+const layoutMenu = ref<HTMLElement | null>(null)
+const layoutButton = ref<HTMLButtonElement | null>(null)
+const menuOpen = ref(false)
+
+function closeMenu(restoreFocus = false) {
+  menuOpen.value = false
+  if (restoreFocus) layoutButton.value?.focus()
+}
+function onOutside(event: PointerEvent) {
+  if (!layoutMenu.value?.contains(event.target as Node)) closeMenu()
+}
+watch(menuOpen, open => {
+  if (open) document.addEventListener('pointerdown', onOutside)
+  else document.removeEventListener('pointerdown', onOutside)
+})
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
+
+async function openMenu() {
+  menuOpen.value = true
+  await nextTick()
+  layoutMenu.value?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus()
+}
+
+function selectLayout(value: Layout) {
+  emit('layout', value)
+  closeMenu(true)
+}
+
+function menuKeys(event: KeyboardEvent) {
+  if (!menuOpen.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    closeMenu(true)
+    return
+  }
+  const buttons = Array.from(layoutMenu.value?.querySelectorAll<HTMLButtonElement>('.layout-list button') ?? [])
+  if (!buttons.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+  event.preventDefault()
+  event.stopPropagation()
+  const i = buttons.indexOf(document.activeElement as HTMLButtonElement)
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+    : (i + (event.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length
+  buttons[next].focus()
+}
 
 const editor = useEditor()
 const name = ref(editor.project?.name ?? '')
@@ -85,6 +136,27 @@ async function commitName() {
     </div>
 
     <div class="top-actions">
+      <div ref="layoutMenu" class="layout-menu" @keydown="menuKeys"
+        @focusout="!layoutMenu?.contains($event.relatedTarget as Node | null) && closeMenu()">
+        <button ref="layoutButton" class="btn layout-trigger" title="Pilih tata letak editor"
+          :aria-expanded="menuOpen" aria-controls="layout-list"
+          @click="menuOpen ? closeMenu() : openMenu()" @keydown.down.prevent="openMenu">
+          <LayoutPanelTop :size="15" /> Tata letak <ChevronDown :size="12" />
+        </button>
+        <div v-if="menuOpen" id="layout-list" class="layout-list" role="group" aria-label="Tata letak editor">
+          <button v-for="option in layouts" :key="option.id" :aria-pressed="props.layout === option.id"
+            @click="selectLayout(option.id)">
+            <LayoutPanelTop v-if="option.id === 'default'" :size="17" />
+            <PanelLeft v-else-if="option.id === 'media' || option.id === 'vertical-left'" :size="17" />
+            <PanelRight v-else :size="17" />
+            <span><strong>{{ option.label }}</strong><small>{{ option.detail }}</small></span>
+            <Check v-if="props.layout === option.id" class="layout-check" :size="15" />
+          </button>
+          <button class="layout-reset" @click="emit('reset-layout'); closeMenu(true)">
+            <RotateCcw :size="14" /> Reset ukuran tata letak ini
+          </button>
+        </div>
+      </div>
       <button class="icon-btn" :disabled="!editor.canUndo" title="Undo (Ctrl+Z)" @click="editor.undo()">
         <Undo2 :size="16" />
       </button>
@@ -216,6 +288,39 @@ async function commitName() {
 .save-state.error {
   color: var(--danger);
 }
+
+.layout-menu { position: relative; }
+.layout-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: 224px;
+  padding: 5px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+.layout-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+}
+.layout-list button:hover, .layout-list button:focus-visible { background: var(--panel-3); }
+.layout-list button span { flex: 1; }
+.layout-list strong, .layout-list small { display: block; }
+.layout-list strong { color: var(--text); font-size: 12px; font-weight: 550; }
+.layout-list small { margin-top: 2px; font-size: 11px; }
+.layout-check { color: var(--accent); }
+.layout-list .layout-reset { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; font-size: 11px; }
 
 .top-actions {
   margin-left: auto;

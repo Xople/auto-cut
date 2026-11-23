@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Film, Image as ImageIcon, Music, Plus, Trash2, Type, Upload, Wand2 } from 'lucide-vue-next'
+import { Film, Image as ImageIcon, Music, Blend, Sparkles, Plus, Trash2, Type, Upload, Wand2 } from 'lucide-vue-next'
 import { thumbUrl } from '../api'
 import { useEditor } from '../stores/editor'
-import { defaultTextStyle, type Asset, type TextStyle } from '../types'
+import FontPicker from './FontPicker.vue'
+import ClipLibrary from './ClipLibrary.vue'
+import { defaultTextStyle, type LibraryTool, type Asset, type TextStyle } from '../types'
 import { formatSecondsShort } from '../lib/format'
 
 const editor = useEditor()
-const tab = ref<'media' | 'text'>('media')
+const tab = defineModel<LibraryTool>('tool', { required: true })
+const tabs = [
+  { key: 'media', label: 'Media', icon: Film },
+  { key: 'text', label: 'Teks', icon: Type },
+  { key: 'transitions', label: 'Transisi', icon: Blend },
+  { key: 'effects', label: 'Efek', icon: Sparkles },
+] as const
+const fontFamily = ref(defaultTextStyle().font_family)
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
 const textDraft = ref('')
@@ -147,33 +156,23 @@ function thumbSource(asset: Asset): string {
 
 function addText(stylePatch: Partial<TextStyle> = {}) {
   const text = textDraft.value.trim() || 'Teks baru'
-  editor.addTextOverlay(text)
-  const selected = editor.selected
-  if (selected && selected.track.kind === 'overlay' && selected.clip.text === text) {
-    editor.updateClip(selected.track.id, selected.clip.id, {
-      style: { ...defaultTextStyle(), ...stylePatch },
-    })
-  }
-  textDraft.value = ''
+  if (editor.addTextOverlay(text, { font_family: fontFamily.value, ...stylePatch })) textDraft.value = ''
 }
 
 function addPreset(patch: Partial<TextStyle>, sample: string) {
-  textDraft.value = sample
+  textDraft.value = textDraft.value.trim() || sample
   addText(patch)
 }
 </script>
 
 <template>
   <aside class="media-panel">
-    <div class="panel-head">
-      <div class="tabs">
-        <button class="tab" :class="{ active: tab === 'media' }" @click="tab = 'media'">Media</button>
-        <button class="tab" :class="{ active: tab === 'text' }" @click="tab = 'text'">Teks</button>
-      </div>
-      <button v-if="tab === 'media'" class="icon-btn" title="Impor media" @click="pickFiles">
-        <Plus :size="16" />
+    <nav class="tool-tabs" aria-label="Pustaka editor">
+      <button v-for="item in tabs" :key="item.key" :aria-pressed="tab === item.key" @click="tab = item.key">
+        <component :is="item.icon" :size="17" />
+        {{ item.label }}
       </button>
-    </div>
+    </nav>
 
     <input
       ref="fileInput"
@@ -255,10 +254,14 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
       </div>
     </div>
 
-    <div v-else class="panel-body text-tab">
+    <div v-else-if="tab === 'text'" class="panel-body text-tab">
+      <div class="field">
+        <label class="field-label">Font teks baru</label>
+        <FontPicker v-model="fontFamily" :fonts="editor.fonts" />
+      </div>
       <div class="field">
         <label class="field-label">Isi teks overlay</label>
-        <textarea v-model="textDraft" class="input" rows="3" placeholder="Tulis teks judul, kutipan, atau catatan..." />
+        <textarea v-model="textDraft" :style="{ fontFamily }" class="input" rows="3" placeholder="Tulis teks judul, kutipan, atau catatan..." />
       </div>
       <button class="btn btn-primary full" @click="addText()">
         <Type :size="15" />
@@ -272,7 +275,7 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
           @click="addPreset({ font_size: 118, bold: true, stroke_width: 6, uppercase: true }, 'JUDUL BESAR')"
         >
           <strong class="preset-title">JUDUL BESAR</strong>
-          <span>Impact · stroke tebal</span>
+          <span>Judul · stroke tebal</span>
         </button>
         <button
           class="preset"
@@ -298,11 +301,13 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
       <div class="hint" style="margin-top: 14px">
         Overlay teks ikut tampil di preview dan dibakar ke video saat export. Blend mode tersedia di panel Properti.
       </div>
-      <button class="btn full" style="margin-top: 12px" @click="editor.addTextOverlay('Catatan editor')">
+      <button class="btn full" style="margin-top: 12px" @click="editor.addTextOverlay('Catatan editor', { font_family: fontFamily })">
         <Wand2 :size="14" />
         Tambah cepat di playhead
       </button>
     </div>
+
+    <ClipLibrary v-else :tool="tab" class="panel-body" />
 
     <Teleport to="body">
       <div
@@ -325,40 +330,25 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
   background: var(--panel);
 }
 
-.panel-head {
-  height: 46px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px 0 12px;
-  border-bottom: 1px solid var(--border-soft);
+.tool-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 6px;
+  border-bottom: 1px solid var(--border);
 }
-
-.tabs {
-  display: flex;
-  gap: 2px;
-  background: #0d0d0d;
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--border-soft);
-}
-
-.tab {
-  height: 26px;
-  padding: 0 13px;
-  border: none;
-  border-radius: 6px;
+.tool-tabs button {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 10px 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
 }
-
-.tab.active {
-  background: var(--panel-3);
-  color: var(--text);
-}
+.tool-tabs button:hover { background: var(--panel-2); }
+.tool-tabs button[aria-pressed="true"] { color: var(--accent); border-bottom-color: currentColor; }
 
 .panel-body {
   position: relative;

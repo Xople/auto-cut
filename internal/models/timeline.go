@@ -359,7 +359,16 @@ func validateTransition(clip Clip) error {
 
 func validTransitionType(kind string) bool {
 	switch kind {
-	case TransitionPullIn, TransitionSlideRight, TransitionSlideLeft:
+	case TransitionPullIn,
+		TransitionPullOut,
+		TransitionBlink,
+		TransitionFlash,
+		TransitionFade,
+		TransitionSlideRight,
+		TransitionSlideLeft,
+		TransitionSlideUp,
+		TransitionSlideDown,
+		TransitionSpinIn:
 		return true
 	}
 	return false

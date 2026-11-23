@@ -257,24 +257,23 @@ func TestRenderPullInTransitionFadesIn(t *testing.T) {
 	cache := filepath.Join(dir, "cache")
 	output := filepath.Join(dir, "out.mp4")
 
-	bottomPath := makeColorVideo(t, dir, "bottom.mp4", "red", 320, 180)
-	topPath := makeColorVideo(t, dir, "top.mp4", "green", 320, 180)
+	firstPath := makeColorVideo(t, dir, "first.mp4", "red", 320, 180)
+	secondPath := makeColorVideo(t, dir, "second.mp4", "green", 320, 180)
 	assets := map[string]*models.Asset{
-		"bottom": {ID: "bottom", Kind: models.AssetVideo, Path: bottomPath, Duration: 2},
-		"top":    {ID: "top", Kind: models.AssetVideo, Path: topPath, Duration: 2},
+		"first":  {ID: "first", Kind: models.AssetVideo, Path: firstPath, Duration: 2},
+		"second": {ID: "second", Kind: models.AssetVideo, Path: secondPath, Duration: 2},
 	}
 	tl := models.NewTimeline(320, 180, 30)
 	tl.Tracks = []models.Track{
 		{
-			ID: "video-top", Kind: models.TrackVideo, Name: "Video 2", Height: models.DefaultTrackHeight,
-			Clips: []models.Clip{{
-				ID: "top-clip", AssetID: "top", Start: 0, Duration: 2, In: 0, Out: 2, Speed: 1, Opacity: 1, Scale: 1,
-				Transition: &models.Transition{Type: models.TransitionPullIn, Duration: 0.6},
-			}},
-		},
-		{
 			ID: "video-main", Kind: models.TrackVideo, Name: "Video", Height: models.DefaultTrackHeight,
-			Clips: []models.Clip{{ID: "bottom-clip", AssetID: "bottom", Start: 0, Duration: 2, In: 0, Out: 2, Speed: 1, Opacity: 1, Scale: 1}},
+			Clips: []models.Clip{
+				{ID: "clip-1", AssetID: "first", Start: 0, Duration: 1, In: 0, Out: 1, Speed: 1, Opacity: 1, Scale: 1},
+				{
+					ID: "clip-2", AssetID: "second", Start: 1, Duration: 1, In: 0, Out: 1, Speed: 1, Opacity: 1, Scale: 1,
+					Transition: &models.Transition{Type: models.TransitionPullIn, Duration: 0.4},
+				},
+			},
 		},
 	}
 
@@ -289,13 +288,15 @@ func TestRenderPullInTransitionFadesIn(t *testing.T) {
 		t.Fatalf("render: %v", err)
 	}
 
-	startR, _, _ := framePixel(t, output, dir, 0.05, 160, 90)
-	if startR < 40 {
-		t.Fatalf("expected base red to show through the pull-in fade, got rgb(%d,*,*)", startR)
+	// Outgoing tail of clip-1 (t=0.92s) must still be solid opaque red (no black dip during pull_in)
+	outR, outG, _ := framePixel(t, output, dir, 0.92, 160, 90)
+	if outR < 150 || outG > 80 {
+		t.Fatalf("expected outgoing pull-in tail to stay solid red, got rgb(%d,%d,*)", outR, outG)
 	}
-	endR, endG, _ := framePixel(t, output, dir, 1.4, 160, 90)
-	if endG < 120 || endR > 90 {
-		t.Fatalf("expected green after the pull-in finishes, got rgb(%d,%d,*)", endR, endG)
+	// Incoming head of clip-2 (t=1.08s) must be solid opaque green
+	inR, inG, _ := framePixel(t, output, dir, 1.08, 160, 90)
+	if inG < 120 || inR > 90 {
+		t.Fatalf("expected incoming pull-in head to be solid green, got rgb(%d,%d,*)", inR, inG)
 	}
 }
 

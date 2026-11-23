@@ -25,7 +25,8 @@ The unified **`autocut-mcp`** server (`D:\Dev\.Projects\AutoCut\bin\autocut-mcp.
     - `autocut_import_asset` — Import `.wav`, `.mp3`, `.mp4`, `.mkv`, `.png`, `.jpg` files into the project (creates thumbnails & waveforms).
     - `autocut_analyze_vo` — Run silence detection + `whisper.cpp` transcription + filler/retake detection on the voice-over asset.
     - `autocut_apply_cuts` — Apply cuts to a voice-over clip with ripple.
-    - `autocut_assemble_short` — **Composite Timeline Assembler**: builds the complete multi-track Timeline (Voice-Over + B-Roll inserts with built-in SFX + 16:9 gameplay/trailer cuts with `background_fill: "blur"` + smart-gated captions + optional BGM) in one call.
+    - `autocut_set_scene_transitions` — Apply transitions across all video scene cuts (`mode: "variety"` or a specific type: `pull_in`, `pull_out`, `blink`, `flash`, `fade`, `slide_up`, `slide_down`, `slide_right`, `slide_left`, `spin_in`).
+    - `autocut_assemble_short` — **Composite Timeline Assembler**: builds the complete multi-track Timeline (Voice-Over + B-Roll inserts with built-in SFX + 16:9 gameplay/trailer cuts with `background_fill: "blur"` + automatic scene transitions `scene_transition: "variety"` + smart-gated captions + optional BGM) in one call.
     - `autocut_upsert_clip` / `autocut_update_timeline` / `autocut_generate_captions` — Fine-grained timeline and caption manipulation.
     - `autocut_export_project` — Render the final MP4 with hardware encoder fallback (`h264_amf` → `libx264`).
 
@@ -74,7 +75,34 @@ Call `autocut_assemble_short` with:
 - **`caption_style`**:
   - Use dark translucent background box (`background_color: "#000000"`, `background_alpha: 0.68`, `font_family: "Merriweather"` or `"Plus Jakarta Sans"`, `font_size: 46`, `position_y: 0.78`, `words_per_chunk: 5`, `highlight: false` for editorial box style, or `highlight: true` for karaoke highlight).
 
-### Step 5 — Export & Verify
+### Step 5 — Apply CapCut Transitions & Impact SFX (`D:\Videos\TxShd\Sounds`)
+1. Every scene cut on the timeline **MUST** use a CapCut two-phase transition paired with a matching impact sound effect from `D:\Videos\TxShd\Sounds` on the `"Transition SFX"` (`id: "audio-sfx"`) track.
+2. `autocut_assemble_short` (with `scene_transition: "variety"` by default) and `autocut_set_scene_transitions` (with `with_sfx: true` by default) automatically import the required sound files from `D:\Videos\TxShd\Sounds` and place timed SFX clips at each scene cut boundary.
+3. Always verify that `transition_sfx_count > 0` in the response (or run `autocut_set_scene_transitions` with `with_sfx: true` if transitions were modified manually).
+
+### Step 6 — Export & Verify
 1. Call `autocut_export_project` with `project_id`, `filename`, and optional external `output_path`.
 2. Verify that `width == 1080`, `height == 1920`, `fps == 60`, `has_audio == true`, and `duration_sec` matches the voice-over timeline.
 3. Inform the user that the project is also live and editable inside the **AutoCut Workstation** desktop app.
+
+---
+
+## 3. Mandatory Rule: CapCut Transitions + Impact SFX (`D:\Videos\TxShd\Sounds`)
+
+Every scene-to-scene transition in AutoCut operates as a **CapCut Two-Phase Transition**:
+- **Phase A (Outgoing Tail of Scene $A$, $[t_{\text{cut}} - h_{\text{out}}, t_{\text{cut}}]$)**: Scene $A$ accelerates into the cut with quadratic ease-in ($u^2$).
+- **Phase B (Incoming Head of Scene $B$, $[t_{\text{cut}}, t_{\text{cut}} + h_{\text{in}}]$)**: Scene $B$ decelerates out of the cut with quadratic ease-out ($r^2$).
+- **Impact SFX (`audio-sfx` track)**: Every transition **MUST** be accompanied by its matching sound effect from `D:\Videos\TxShd\Sounds`, pre-rolled slightly before $t_{\text{cut}}$ (`lead`) so the peak transient lands directly on the visual cut:
+
+| Transition Type | CapCut Visual Choreography (Outgoing $A \to$ Incoming $B$) | Mandatory Sound File (`D:\Videos\TxShd\Sounds\`) | Trim & Sync (`in`, `dur`, `lead`, `vol`) |
+| :--- | :--- | :--- | :--- |
+| **`pull_in`** | $A$ zooms in $1.0\times \to 1.36\times$ ($u^2$); $B$ settles $1.28\times \to 1.0\times$ ($r^2$) | `punch.mp3` | `in: 0.00s, dur: 0.35s, lead: 0.05s, vol: 0.54` |
+| **`pull_out`** | $A$ pushes $1.0\times \to 1.18\times$ ($u^2$); $B$ pulls back $1.34\times \to 1.0\times$ ($r^2$) | `woosh.mp3` | `in: 0.24s, dur: 0.40s, lead: 0.15s, vol: 0.54` |
+| **`blink`** | Horizontal eyelid bars close to black on $A$, then snap open on $B$ | `camera_zLdd1zp.mp3` | `in: 0.04s, dur: 0.45s, lead: 0.10s, vol: 0.55` |
+| **`flash`** | $A$ ramps exposure to pure white flash; $B$ decays from white flash + $1.10\times \to 1.0\times$ | `camera_zLdd1zp.mp3` | `in: 0.00s, dur: 0.58s, lead: 0.08s, vol: 0.58` |
+| **`slide_up`** | $A$ whips upward ($-42\%$, $1.14\times$); $B$ whips in from bottom ($+42\% \to 0$, $1.14\times \to 1.0\times$) | `woosh.mp3` | `in: 0.26s, dur: 0.36s, lead: 0.14s, vol: 0.55` |
+| **`slide_down`** | $A$ whips downward ($+42\%$, $1.14\times$); $B$ whips in from top ($-42\% \to 0$, $1.14\times \to 1.0\times$) | `woosh.mp3` | `in: 0.26s, dur: 0.36s, lead: 0.14s, vol: 0.55` |
+| **`slide_left`** | $A$ whips left ($-42\%$, $1.14\times$); $B$ whips in from right ($+42\% \to 0$, $1.14\times \to 1.0\times$) | `woosh.mp3` | `in: 0.26s, dur: 0.36s, lead: 0.14s, vol: 0.55` |
+| **`slide_right`** | $A$ whips right ($+42\%$, $1.14\times$); $B$ whips in from left ($-42\% \to 0$, $1.14\times \to 1.0\times$) | `woosh.mp3` | `in: 0.26s, dur: 0.36s, lead: 0.14s, vol: 0.55` |
+| **`spin_in`** | $A$ spins $+16^\circ$ & zooms $1.28\times$; $B$ settles from $-16^\circ \to 0^\circ$ & $1.28\times \to 1.0\times$ | `dbz-teleport.mp3` | `in: 0.02s, dur: 0.48s, lead: 0.10s, vol: 0.50` |
+| **`fade`** | $A$ dips to black ($1 \to 0$); $B$ emerges from black ($0 \to 1$) | `pop_7e9Is8L.mp3` | `in: 0.00s, dur: 0.26s, lead: 0.04s, vol: 0.52` |

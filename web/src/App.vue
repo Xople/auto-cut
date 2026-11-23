@@ -3,11 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, initApi, waitForServer } from './api'
 import { useEditor } from './stores/editor'
 import ProjectLauncher from './components/ProjectLauncher.vue'
-import TopBar from './components/TopBar.vue'
-import MediaPanel from './components/MediaPanel.vue'
-import PreviewStage from './components/PreviewStage.vue'
-import PropertiesPanel from './components/PropertiesPanel.vue'
-import TimelinePanel from './components/TimelinePanel.vue'
+import EditorWorkspace from './components/EditorWorkspace.vue'
 import AutoCutDialog from './components/AutoCutDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import ToastHost from './components/ToastHost.vue'
@@ -120,7 +116,7 @@ function onGlobalKeydown(event: KeyboardEvent) {
     editor.clearSelection()
     return
   }
-  if (event.code === 'Space') {
+  if (event.code === 'Space' && !target?.closest('button')) {
     event.preventDefault()
     editor.togglePlay()
     return
@@ -178,25 +174,14 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else>
-      <TopBar
+      <EditorWorkspace
         v-if="editor.project"
+        :key="editor.project.id"
         @back="editor.closeProject()"
         @open-autocut="autoCutOpen = true"
         @open-export="exportOpen = true"
         @generate-captions="generateCaptions"
       />
-
-      <div v-if="editor.project" class="workspace">
-        <MediaPanel class="area-media" />
-        <PreviewStage class="area-preview" />
-        <PropertiesPanel
-          class="area-props"
-          @open-autocut="autoCutOpen = true"
-          @generate-captions="generateCaptions"
-        />
-        <TimelinePanel class="area-timeline" />
-      </div>
-
       <ProjectLauncher v-else :busy="opening" @open="openProject" />
 
       <AutoCutDialog v-model="autoCutOpen" />
@@ -217,36 +202,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   background: var(--bg);
-}
-
-.workspace {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 268px minmax(0, 1fr) 306px;
-  grid-template-rows: minmax(0, 1fr) 286px;
-  gap: 1px;
-  background: var(--border-soft);
-}
-
-.area-media {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.area-preview {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.area-props {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-.area-timeline {
-  grid-column: 1 / -1;
-  grid-row: 2;
 }
 
 .boot-screen {

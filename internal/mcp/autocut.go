@@ -141,6 +141,22 @@ func (s *Server) registerAutoCutTools() {
 	}, s.handleUpsertClip)
 
 	s.RegisterTool(ToolDefinition{
+		Name:        "autocut_set_scene_transitions",
+		Description: "Apply CapCut-style two-phase transitions across all video scene clips on the project timeline (supports 'variety' for automatic non-monotonous transition rotation, 'none' to clear, or any specific type: 'pull_in', 'pull_out', 'blink', 'flash', 'fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'spin_in') and automatically attach matching impact sound effects from D:\\Videos\\TxShd\\Sounds onto the Transition SFX audio track.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"project_id":    map[string]any{"type": "string", "description": "Project ID"},
+				"mode":          map[string]any{"type": "string", "description": "'variety' (default), 'none', or a TransitionType ('pull_in', 'pull_out', 'blink', 'flash', 'fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'spin_in')"},
+				"duration":      map[string]any{"type": "number", "description": "Transition duration in seconds (default 0.38)"},
+				"include_first": map[string]any{"type": "boolean", "description": "Also apply transition to the very first scene at t=0 (default false)"},
+				"with_sfx":      map[string]any{"type": "boolean", "description": "Automatically attach matching impact SFX from D:\\Videos\\TxShd\\Sounds on the 'audio-sfx' track (default true)"},
+			},
+			"required": []string{"project_id"},
+		},
+	}, s.handleSetSceneTransitions)
+
+	s.RegisterTool(ToolDefinition{
 		Name:        "autocut_update_timeline",
 		Description: "Replace or normalize the full Timeline JSON of a project.",
 		InputSchema: map[string]any{
@@ -194,6 +210,14 @@ func (s *Server) registerAutoCutTools() {
 				"auto_captions": map[string]any{
 					"type":        "boolean",
 					"description": "Automatically generate captions from transcript while excluding segments with suppress_captions: true (default true)",
+				},
+				"scene_transition": map[string]any{
+					"type":        "string",
+					"description": "Default transition mode for every scene cut ('variety', 'none', or a TransitionType such as 'pull_in', 'blink', 'flash', 'slide_up'). Defaults to 'variety'.",
+				},
+				"transition_duration": map[string]any{
+					"type":        "number",
+					"description": "Default scene transition duration in seconds (default 0.38)",
 				},
 			},
 			"required": []string{"project_id", "voiceover", "visual_segments"},
@@ -525,6 +549,96 @@ func (s *Server) handleUpsertClip(_ context.Context, raw json.RawMessage) (any, 
 	return clip, nil
 }
 
+var varietyTransitionCycle = []string{
+	models.TransitionPullIn,
+	models.TransitionBlink,
+	models.TransitionSlideUp,
+	models.TransitionFlash,
+	models.TransitionPullOut,
+	models.TransitionSpinIn,
+	models.TransitionSlideLeft,
+	models.TransitionSlideRight,
+}
+
+func resolveSceneTransition(mode string, sceneIdx int, dur float64) *models.Transition {
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode == "" {
+		mode = "variety"
+	}
+	if mode == "none" {
+		return nil
+	}
+	if dur <= 0 {
+		dur = 0.38
+	}
+	tType := mode
+	if mode == "variety" || mode == "auto" || mode == "auto_variety" {
+		tType = varietyTransitionCycle[sceneIdx%len(varietyTransitionCycle)]
+	}
+	return &models.Transition{
+		Type:     tType,
+		Duration: dur,
+	}
+}
+
+func (s *Server) handleSetSceneTransitions(_ context.Context, raw json.RawMessage) (any, error) {
+	var args struct {
+		ProjectID    string  `json:"project_id"`
+		Mode         string  `json:"mode"`
+		Duration     float64 `json:"duration"`
+		IncludeFirst bool    `json:"include_first"`
+		WithSFX      *bool   `json:"with_sfx"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil, err
+	}
+	p, err := s.projects.Get(args.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	dur := args.Duration
+	if dur <= 0 {
+		dur = 0.38
+	}
+	mode := strings.TrimSpace(args.Mode)
+	if mode == "" {
+		mode = "variety"
+	}
+	withSFX := true
+	if args.WithSFX != nil {
+		withSFX = *args.WithSFX
+	}
+
+	updatedCount, sfxCount, applied, err := s.projects.ApplySceneTransitions(
+		args.ProjectID,
+		&p.Timeline,
+		mode,
+		dur,
+		args.IncludeFirst,
+		withSFX,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	models.NormalizeTimeline(&p.Timeline)
+	if err := models.ValidateTimeline(p.Timeline); err != nil {
+		return nil, err
+	}
+	if err := s.projects.SaveTimeline(args.ProjectID, &p.Timeline); err != nil {
+		return nil, err
+	}
+	s.notifyLiveDesktop(args.ProjectID, "transitions_updated")
+	return map[string]any{
+		"project_id":           args.ProjectID,
+		"mode":                 mode,
+		"duration":             dur,
+		"clips_updated":        updatedCount,
+		"transition_sfx_count": sfxCount,
+		"scenes":               applied,
+	}, nil
+}
+
 func (s *Server) handleUpdateTimeline(_ context.Context, raw json.RawMessage) (any, error) {
 	var args struct {
 		ProjectID string          `json:"project_id"`
@@ -581,6 +695,9 @@ func (s *Server) handleGenerateCaptions(_ context.Context, raw json.RawMessage) 
 	}
 	var sources []models.Clip
 	for _, track := range p.Timeline.Tracks {
+		if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+			continue
+		}
 		if track.Kind == models.TrackAudio || track.Kind == models.TrackVideo {
 			sources = append(sources, track.Clips...)
 		}
@@ -651,8 +768,10 @@ type assembleShortArgs struct {
 		FadeIn  float64  `json:"fade_in"`
 		FadeOut float64  `json:"fade_out"`
 	} `json:"bgm"`
-	CaptionStyle *models.CaptionStyle `json:"caption_style"`
-	AutoCaptions *bool                `json:"auto_captions"`
+	CaptionStyle       *models.CaptionStyle `json:"caption_style"`
+	AutoCaptions       *bool                `json:"auto_captions"`
+	SceneTransition    string               `json:"scene_transition"`
+	TransitionDuration float64              `json:"transition_duration"`
 }
 
 func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (any, error) {
@@ -769,6 +888,15 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 			bgFill = "blur"
 		}
 
+		trans := seg.Transition
+		if trans == nil && idx > 0 {
+			sceneMode := args.SceneTransition
+			if strings.TrimSpace(sceneMode) == "" {
+				sceneMode = "variety"
+			}
+			trans = resolveSceneTransition(sceneMode, idx-1, args.TransitionDuration)
+		}
+
 		clip := models.Clip{
 			ID:             fmt.Sprintf("clip_v_%02d", idx+1),
 			AssetID:        a.ID,
@@ -786,7 +914,7 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 			BackgroundFill: bgFill,
 			BackgroundBlur: seg.BackgroundBlur,
 			BackgroundDim:  seg.BackgroundDim,
-			Transition:     seg.Transition,
+			Transition:     trans,
 		}
 		videoClips = append(videoClips, clip)
 		if seg.SuppressCaptions {
@@ -856,6 +984,9 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 		if tr, err := s.projects.Transcript(args.ProjectID); err == nil && len(tr.Words) > 0 {
 			var voClips []models.Clip
 			for _, track := range tl.Tracks {
+				if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+					continue
+				}
 				if track.Kind == models.TrackAudio {
 					voClips = append(voClips, track.Clips...)
 				}
@@ -871,6 +1002,8 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 		}
 	}
 
+	sfxCount, sfxApplied, _ := s.projects.SyncTransitionSFXTrack(args.ProjectID, &tl, "")
+
 	models.NormalizeTimeline(&tl)
 	if err := models.ValidateTimeline(tl); err != nil {
 		return nil, fmt.Errorf("assembled timeline validation failed: %w", err)
@@ -881,11 +1014,13 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 	s.notifyLiveDesktop(args.ProjectID, "short_assembled")
 
 	return map[string]any{
-		"project_id":        args.ProjectID,
-		"timeline_duration": models.TimelineDuration(tl),
-		"video_clips":       len(videoClips),
-		"caption_clips":     captionCount,
-		"excluded_ranges":   excludeRanges,
+		"project_id":           args.ProjectID,
+		"timeline_duration":    models.TimelineDuration(tl),
+		"video_clips":          len(videoClips),
+		"caption_clips":        captionCount,
+		"transition_sfx_count": sfxCount,
+		"transition_sfx":       sfxApplied,
+		"excluded_ranges":      excludeRanges,
 	}, nil
 }
 

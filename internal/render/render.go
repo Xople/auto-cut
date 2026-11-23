@@ -437,7 +437,7 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 			}
 			clips := append([]models.Clip{}, track.Clips...)
 			sortClips(clips)
-			for _, clip := range clips {
+			for idx, clip := range clips {
 				if clip.Start >= total || math.Min(clip.Start+clip.Duration, total) <= clip.Start+0.001 {
 					continue
 				}
@@ -447,11 +447,11 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 					if path == "" {
 						continue
 					}
-					idx := b.input("overlay:"+clip.ID,
+					inIdx := b.input("overlay:"+clip.ID,
 						"-loop", "1", "-t", formatSeconds(total), "-framerate", formatSeconds(fps), "-i", path)
 					src := fmt.Sprintf("[ov%d]", b.nextLabel())
-					b.add("[%d:v]format=rgba%s", idx, src)
-					base = compositeLayer(b, base, src, clip, width, height, "", "")
+					b.add("[%d:v]format=rgba%s", inIdx, src)
+					base = compositeLayer(b, base, src, clip, nil, width, height, "", "")
 					continue
 				}
 
@@ -470,6 +470,20 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 				source := labels[used[asset.ID]]
 				used[asset.ID]++
 
+				var outTransition *models.Transition
+				if idx+1 < len(clips) {
+					nextClip := clips[idx+1]
+					if nextClip.Transition != nil && nextClip.Transition.Duration > 0 &&
+						math.Abs((clip.Start+clip.Duration)-nextClip.Start) < 0.08 {
+						outTransition = nextClip.Transition
+					}
+				}
+
+				if effect := videoEffectFilter(clip); effect != "" {
+					filtered := fmt.Sprintf("[fx%d]", b.nextLabel())
+					b.add("%s%s%s", source, effect, filtered)
+					source = filtered
+				}
 				src := fmt.Sprintf("[vc%d]", b.nextLabel())
 				if clip.BackgroundFill == "blur" {
 					bgSrc := fmt.Sprintf("[vbg%d]", b.nextLabel())
@@ -498,8 +512,8 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 						width, height, width, height, formatSeconds(clip.Start), src)
 				}
 
-				src, offsetX, offsetY := applyClipTransform(b, src, clip, width, height)
-				base = compositeLayer(b, base, src, clip, width, height, offsetX, offsetY)
+				src, offsetX, offsetY := applyClipTransform(b, src, clip, outTransition, width, height)
+				base = compositeLayer(b, base, src, clip, outTransition, width, height, offsetX, offsetY)
 			}
 		}
 	}
@@ -509,6 +523,37 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 
 	b.add("%sformat=yuv420p[basev]", base)
 	return "[basev]", nil
+}
+
+// Interpolate from identity to the CSS filter's RGB matrix, keeping alpha intact.
+func videoEffectFilter(clip models.Clip) string {
+	var matrix [9]float64
+	switch clip.VideoEffect {
+	case "mono":
+		matrix = [9]float64{.2126, .7152, .0722, .2126, .7152, .0722, .2126, .7152, .0722}
+	case "sepia":
+		matrix = [9]float64{.393, .769, .189, .349, .686, .168, .272, .534, .131}
+	case "vivid":
+		matrix = [9]float64{1.5509, -.5005, -.0504, -.1491, 1.1995, -.0504, -.1491, -.5005, 1.6496}
+	default:
+		return ""
+	}
+	amount := 1.0
+	if clip.EffectIntensity != nil {
+		amount = clamp01(*clip.EffectIntensity)
+	}
+	if amount == 0 {
+		return ""
+	}
+	for i, value := range matrix {
+		base := 0.0
+		if i%4 == 0 {
+			base = 1
+		}
+		matrix[i] = base + (value-base)*amount
+	}
+	return fmt.Sprintf("colorchannelmixer=rr=%.5f:rg=%.5f:rb=%.5f:gr=%.5f:gg=%.5f:gb=%.5f:br=%.5f:bg=%.5f:bb=%.5f",
+		matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5], matrix[6], matrix[7], matrix[8])
 }
 
 func clipKeyframes(clip models.Clip) []models.TransformKeyframe {
@@ -569,30 +614,121 @@ func quoteOverlayExpr(expr string) string {
 
 // applyClipTransform bakes scale/rotation into the layer and returns overlay
 // x/y offsets. The layer is normalized back to canvas size so overlay and blend
-// filters see a stable frame size.
-func applyClipTransform(b *graphBuilder, src string, clip models.Clip, width, height int) (string, string, string) {
+// filters see a stable frame size. It models CapCut's two-phase transition:
+// outgoing tail [clip.End - hOut, clip.End] accelerates into the cut while
+// incoming head [clip.Start, clip.Start + hIn] decelerates out of the cut.
+func applyClipTransform(b *graphBuilder, src string, clip models.Clip, outTrans *models.Transition, width, height int) (string, string, string) {
 	frames := clipKeyframes(clip)
 	scaleExpr := transformValueExpr(clip, clip.Scale, func(frame models.TransformKeyframe) float64 { return frame.Scale })
 	rotationExpr := transformValueExpr(clip, clip.Rotation, func(frame models.TransformKeyframe) float64 { return frame.Rotation })
 	scaleAnimated := keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.Scale })
 	rotationAnimated := keyframesDiffer(frames, func(frame models.TransformKeyframe) float64 { return frame.Rotation })
 
-	pullIn := clip.Transition != nil && clip.Transition.Type == models.TransitionPullIn && clip.Transition.Duration > 0
-	pullExpr := ""
-	if pullIn {
-		pullExpr = fmt.Sprintf("(1+0.18*min(1,max(0,1-(t-%s)/%s)))",
-			formatSeconds(math.Max(0, clip.Start)), formatSeconds(clip.Transition.Duration))
+	inType := ""
+	inHalf := 0.0
+	if clip.Transition != nil && clip.Transition.Duration > 0 {
+		inType = clip.Transition.Type
+		inHalf = math.Min(clip.Transition.Duration*0.55, clip.Duration*0.45)
+	}
+	outType := ""
+	outHalf := 0.0
+	if outTrans != nil && outTrans.Duration > 0 {
+		outType = outTrans.Type
+		outHalf = math.Min(outTrans.Duration*0.45, clip.Duration*0.45)
+	}
+
+	clipStart := math.Max(0, clip.Start)
+	clipEnd := clipStart + clip.Duration
+
+	// inRem: 1 -> 0 over [clipStart, clipStart + inHalf], quadratic ease-out (inRem^2)
+	inQuad := ""
+	if inHalf > 0.01 {
+		r := fmt.Sprintf("min(1,max(0,1-(t-%s)/%s))", formatSeconds(clipStart), formatSeconds(inHalf))
+		inQuad = fmt.Sprintf("((%s)*(%s))", r, r)
+	}
+	// outProg: 0 -> 1 over [clipEnd - outHalf, clipEnd], quadratic ease-in (outProg^2)
+	outQuad := ""
+	if outHalf > 0.01 {
+		u := fmt.Sprintf("min(1,max(0,(t-%s)/%s))", formatSeconds(clipEnd-outHalf), formatSeconds(outHalf))
+		outQuad = fmt.Sprintf("((%s)*(%s))", u, u)
+	}
+
+	// Incoming visual color/fade effects
+	switch inType {
+	case models.TransitionFade:
 		faded := fmt.Sprintf("[vf%d]", b.nextLabel())
-		b.add("%sfade=t=in:st=%s:d=%s:alpha=1%s",
-			src, formatSeconds(math.Max(0, clip.Start)), formatSeconds(clip.Transition.Duration), faded)
+		b.add("%sfade=t=in:st=%s:d=%s:color=black%s", src, formatSeconds(clipStart), formatSeconds(inHalf), faded)
+		src = faded
+	case models.TransitionBlink:
+		faded := fmt.Sprintf("[vf%d]", b.nextLabel())
+		b.add("%sfade=t=in:st=%s:d=%s:color=black%s", src, formatSeconds(clipStart), formatSeconds(inHalf), faded)
+		src = faded
+	case models.TransitionFlash:
+		faded := fmt.Sprintf("[vf%d]", b.nextLabel())
+		b.add("%sfade=t=in:st=%s:d=%s:color=white%s", src, formatSeconds(clipStart), formatSeconds(inHalf), faded)
 		src = faded
 	}
 
+	// Outgoing visual color/fade effects leading into the next clip's transition
+	switch outType {
+	case models.TransitionFade, models.TransitionBlink:
+		faded := fmt.Sprintf("[vfo%d]", b.nextLabel())
+		b.add("%sfade=t=out:st=%s:d=%s:color=black%s", src, formatSeconds(clipEnd-outHalf), formatSeconds(outHalf), faded)
+		src = faded
+	case models.TransitionFlash:
+		faded := fmt.Sprintf("[vfo%d]", b.nextLabel())
+		b.add("%sfade=t=out:st=%s:d=%s:color=white%s", src, formatSeconds(clipEnd-outHalf), formatSeconds(outHalf), faded)
+		src = faded
+	}
+
+	var scaleTerms []string
+	switch inType {
+	case models.TransitionPullIn:
+		if inQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.28*%s", inQuad))
+		}
+	case models.TransitionPullOut:
+		if inQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.34*%s", inQuad))
+		}
+	case models.TransitionSpinIn:
+		if inQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.28*%s", inQuad))
+		}
+	case models.TransitionFlash:
+		if inQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.10*%s", inQuad))
+		}
+	case models.TransitionSlideUp, models.TransitionSlideDown, models.TransitionSlideLeft, models.TransitionSlideRight:
+		if inQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.14*%s", inQuad))
+		}
+	}
+
+	switch outType {
+	case models.TransitionPullIn:
+		if outQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.36*%s", outQuad))
+		}
+	case models.TransitionPullOut:
+		if outQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.18*%s", outQuad))
+		}
+	case models.TransitionSpinIn:
+		if outQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.28*%s", outQuad))
+		}
+	case models.TransitionSlideUp, models.TransitionSlideDown, models.TransitionSlideLeft, models.TransitionSlideRight:
+		if outQuad != "" {
+			scaleTerms = append(scaleTerms, fmt.Sprintf("0.14*%s", outQuad))
+		}
+	}
+
 	scaleChanged := scaleAnimated || math.Abs(clip.Scale-1) > 0.0001
-	if scaleChanged || pullIn {
+	if scaleChanged || len(scaleTerms) > 0 {
 		factor := scaleExpr
-		if pullIn {
-			factor = fmt.Sprintf("(%s)*%s", scaleExpr, pullExpr)
+		if len(scaleTerms) > 0 {
+			factor = fmt.Sprintf("(%s)*(1+%s)", scaleExpr, strings.Join(scaleTerms, "+"))
 		}
 		scaled := fmt.Sprintf("[vsc%d]", b.nextLabel())
 		b.add("%sscale=w='trunc(iw*(%s)/2)*2':h=-2:eval=frame%s", src, factor, scaled)
@@ -605,9 +741,17 @@ func applyClipTransform(b *graphBuilder, src string, clip models.Clip, width, he
 		src = padded
 	}
 
-	if rotationAnimated || math.Abs(clip.Rotation) > 0.0001 {
+	hasSpin := (inType == models.TransitionSpinIn && inQuad != "") || (outType == models.TransitionSpinIn && outQuad != "")
+	if rotationAnimated || math.Abs(clip.Rotation) > 0.0001 || hasSpin {
+		rotTotal := rotationExpr
+		if inType == models.TransitionSpinIn && inQuad != "" {
+			rotTotal = fmt.Sprintf("(%s)-16*%s", rotTotal, inQuad)
+		}
+		if outType == models.TransitionSpinIn && outQuad != "" {
+			rotTotal = fmt.Sprintf("(%s)+16*%s", rotTotal, outQuad)
+		}
 		rotated := fmt.Sprintf("[vrt%d]", b.nextLabel())
-		b.add("%srotate=a='(%s)*0.0174532925199433':ow=iw:oh=ih:c=black@0%s", src, rotationExpr, rotated)
+		b.add("%srotate=a='(%s)*0.0174532925199433':ow=iw:oh=ih:c=black@0%s", src, rotTotal, rotated)
 		src = rotated
 	}
 
@@ -630,7 +774,7 @@ func applyClipTransform(b *graphBuilder, src string, clip models.Clip, width, he
 	return src, xExpr, yExpr
 }
 
-func compositeLayer(b *graphBuilder, base, src string, clip models.Clip, width, height int, offsetX, offsetY string) string {
+func compositeLayer(b *graphBuilder, base, src string, clip models.Clip, outTrans *models.Transition, width, height int, offsetX, offsetY string) string {
 	start := math.Max(0, clip.Start)
 	end := clip.Start + clip.Duration
 	enable := fmt.Sprintf("enable='between(t,%s,%s)'", formatSeconds(start), formatSeconds(end))
@@ -642,24 +786,64 @@ func compositeLayer(b *graphBuilder, base, src string, clip models.Clip, width, 
 	if yExpr == "" {
 		yExpr = "0"
 	}
-	if transition := clip.Transition; transition != nil {
+
+	if transition := clip.Transition; transition != nil && transition.Duration > 0 {
+		inHalf := math.Min(transition.Duration*0.55, clip.Duration*0.45)
+		r := fmt.Sprintf("min(1,max(0,1-(t-%s)/%s))", formatSeconds(start), formatSeconds(inHalf))
+		rQuad := fmt.Sprintf("((%s)*(%s))", r, r)
 		switch transition.Type {
 		case models.TransitionSlideRight, models.TransitionSlideLeft:
-			offset := fmt.Sprintf("W*(1-(t-%s)/%s)", formatSeconds(start), formatSeconds(transition.Duration))
+			offset := fmt.Sprintf("0.42*W*%s", rQuad)
 			if transition.Type == models.TransitionSlideLeft {
 				offset = "-(" + offset + ")"
 			}
 			if xExpr != "0" {
 				offset = fmt.Sprintf("(%s)+%s", xExpr, offset)
 			}
-			xExpr = fmt.Sprintf("if(lt(t,%s),%s,%s)", formatSeconds(start+transition.Duration), offset, xExpr)
-		case models.TransitionPullIn:
+			xExpr = fmt.Sprintf("if(lt(t,%s),%s,%s)", formatSeconds(start+inHalf), offset, xExpr)
+		case models.TransitionSlideUp, models.TransitionSlideDown:
+			offset := fmt.Sprintf("0.42*H*%s", rQuad)
+			if transition.Type == models.TransitionSlideDown {
+				offset = "-(" + offset + ")"
+			}
+			if yExpr != "0" {
+				offset = fmt.Sprintf("(%s)+%s", yExpr, offset)
+			}
+			yExpr = fmt.Sprintf("if(lt(t,%s),%s,%s)", formatSeconds(start+inHalf), offset, yExpr)
+		case models.TransitionPullIn, models.TransitionPullOut, models.TransitionSpinIn, models.TransitionFlash:
 			if offsetX == "" {
 				xExpr = "(W-w)/2"
 			}
 			if offsetY == "" {
 				yExpr = "(H-h)/2"
 			}
+		}
+	}
+
+	if outTrans != nil && outTrans.Duration > 0 {
+		outHalf := math.Min(outTrans.Duration*0.45, clip.Duration*0.45)
+		u := fmt.Sprintf("min(1,max(0,(t-%s)/%s))", formatSeconds(end-outHalf), formatSeconds(outHalf))
+		uQuad := fmt.Sprintf("((%s)*(%s))", u, u)
+		switch outTrans.Type {
+		case models.TransitionSlideRight, models.TransitionSlideLeft:
+			// Outgoing whips in the opposite direction as incoming pushes it
+			offset := fmt.Sprintf("-0.42*W*%s", uQuad)
+			if outTrans.Type == models.TransitionSlideLeft {
+				offset = fmt.Sprintf("0.42*W*%s", uQuad)
+			}
+			if xExpr != "0" {
+				offset = fmt.Sprintf("(%s)+%s", xExpr, offset)
+			}
+			xExpr = fmt.Sprintf("if(gt(t,%s),%s,%s)", formatSeconds(end-outHalf), offset, xExpr)
+		case models.TransitionSlideUp, models.TransitionSlideDown:
+			offset := fmt.Sprintf("-0.42*H*%s", uQuad)
+			if outTrans.Type == models.TransitionSlideDown {
+				offset = fmt.Sprintf("0.42*H*%s", uQuad)
+			}
+			if yExpr != "0" {
+				offset = fmt.Sprintf("(%s)+%s", yExpr, offset)
+			}
+			yExpr = fmt.Sprintf("if(gt(t,%s),%s,%s)", formatSeconds(end-outHalf), offset, yExpr)
 		}
 	}
 
