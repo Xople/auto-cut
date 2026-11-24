@@ -7,6 +7,7 @@ import (
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"autocut/internal/captions"
@@ -331,13 +332,29 @@ func (s *Server) handleImportAsset(_ context.Context, raw json.RawMessage) (any,
 	if len(allPaths) == 0 {
 		return nil, fmt.Errorf("at least one file path is required")
 	}
-	var imported []*models.Asset
-	for _, p := range allPaths {
-		a, err := s.projects.ImportPath(args.ProjectID, p)
+	imported := make([]*models.Asset, len(allPaths))
+	errs := make([]error, len(allPaths))
+	sem := make(chan struct{}, 4)
+	var wg sync.WaitGroup
+	for i, p := range allPaths {
+		wg.Add(1)
+		go func(idx int, path string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			a, err := s.projects.ImportPath(args.ProjectID, path)
+			if err != nil {
+				errs[idx] = fmt.Errorf("failed importing %s: %w", path, err)
+				return
+			}
+			imported[idx] = a
+		}(i, p)
+	}
+	wg.Wait()
+	for _, err := range errs {
 		if err != nil {
-			return nil, fmt.Errorf("failed importing %s: %w", p, err)
+			return nil, err
 		}
-		imported = append(imported, a)
 	}
 	s.notifyLiveDesktop(args.ProjectID, "assets_imported")
 	if len(imported) == 1 {

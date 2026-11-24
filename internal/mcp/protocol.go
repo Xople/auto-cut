@@ -59,6 +59,8 @@ type Server struct {
 	orchestrator *pipeline.Orchestrator
 	renderer     *render.Renderer
 	brollDir     string
+	droploadDir  string
+	droploadURL  string
 	tools        []registeredTool
 	toolMap      map[string]registeredTool
 }
@@ -68,6 +70,11 @@ func NewServer(cfg *config.Config, database *db.DB, orch *pipeline.Orchestrator)
 	if strings.TrimSpace(brollDir) == "" {
 		brollDir = `D:\Dev\.Projects\BRollEngine`
 	}
+	droploadDir := os.Getenv("DROPLOAD_DIR")
+	if strings.TrimSpace(droploadDir) == "" {
+		droploadDir = `D:\Dev\.Projects\DropLoad`
+	}
+	droploadURL := strings.TrimSpace(os.Getenv("DROPLOAD_API_URL"))
 	projSvc := project.NewService(cfg, database)
 	s := &Server{
 		cfg:          cfg,
@@ -76,8 +83,11 @@ func NewServer(cfg *config.Config, database *db.DB, orch *pipeline.Orchestrator)
 		orchestrator: orch,
 		renderer:     render.NewRenderer(projSvc.FFmpeg(), projSvc.Fonts()),
 		brollDir:     brollDir,
+		droploadDir:  droploadDir,
+		droploadURL:  droploadURL,
 		toolMap:      map[string]registeredTool{},
 	}
+	s.registerDropLoadTools()
 	s.registerBRollTools()
 	s.registerAutoCutTools()
 	return s

@@ -153,6 +153,7 @@ func (r *Renderer) Render(ctx context.Context, req RenderRequest) error {
 	baseArgs := []string{"-hide_banner", "-y", "-v", "error", "-nostats", "-progress", "pipe:1"}
 	baseArgs = append(baseArgs, b.inputArgs()...)
 	baseArgs = append(baseArgs,
+		"-filter_complex_threads", "0",
 		"-filter_complex_script", scriptPath,
 		"-map", finalVideo,
 		"-map", audioOut,
@@ -500,14 +501,24 @@ func buildVisual(b *graphBuilder, tl models.Timeline, assets map[string]*models.
 					}
 					b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,split=2%s%s",
 						source, formatSeconds(in), formatSeconds(out), formatSeconds(fps), bgSrc, fgSrc)
-					b.add("%sscale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,gblur=sigma=%d,eq=brightness=-%.2f,setsar=1%s",
-						bgSrc, width, height, width, height, sigma, dim, bgDone)
-					b.add("%sscale=%d:%d:force_original_aspect_ratio=decrease,setsar=1%s",
+					// Downscale 4x before Gaussian blur and upscale back: visually identical smooth blur at ~16x fewer pixels.
+					blurW := (width / 4) &^ 1
+					if blurW < 64 {
+						blurW = width
+					}
+					blurH := (height / 4) &^ 1
+					if blurH < 64 {
+						blurH = height
+					}
+					blurSigma := math.Max(1.5, float64(sigma)*float64(blurW)/float64(width))
+					b.add("%sscale=%d:%d:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=%d:%d,gblur=sigma=%.2f,scale=%d:%d:flags=bilinear,eq=brightness=-%.2f,setsar=1%s",
+						bgSrc, blurW, blurH, blurW, blurH, blurSigma, width, height, dim, bgDone)
+					b.add("%sscale=%d:%d:force_original_aspect_ratio=decrease:flags=bilinear,setsar=1%s",
 						fgSrc, width, height, fgDone)
 					b.add("%s%soverlay=(W-w)/2:(H-h)/2:format=auto,format=rgba,setsar=1,setpts=PTS+%s/TB%s",
 						bgDone, fgDone, formatSeconds(clip.Start), src)
 				} else {
-					b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease,format=rgba,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,setsar=1,setpts=PTS+%s/TB%s",
+					b.add("%strim=start=%s:end=%s,setpts=PTS-STARTPTS,fps=%s,scale=%d:%d:force_original_aspect_ratio=decrease:flags=bilinear,format=rgba,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,setsar=1,setpts=PTS+%s/TB%s",
 						source, formatSeconds(in), formatSeconds(out), formatSeconds(fps),
 						width, height, width, height, formatSeconds(clip.Start), src)
 				}
@@ -731,7 +742,7 @@ func applyClipTransform(b *graphBuilder, src string, clip models.Clip, outTrans 
 			factor = fmt.Sprintf("(%s)*(1+%s)", scaleExpr, strings.Join(scaleTerms, "+"))
 		}
 		scaled := fmt.Sprintf("[vsc%d]", b.nextLabel())
-		b.add("%sscale=w='trunc(iw*(%s)/2)*2':h=-2:eval=frame%s", src, factor, scaled)
+		b.add("%sscale=w='trunc(iw*(%s)/2)*2':h=-2:eval=frame:flags=bilinear%s", src, factor, scaled)
 		cropped := fmt.Sprintf("[vcr%d]", b.nextLabel())
 		b.add("%scrop=w='min(iw,%d)':h='min(ih,%d)':x='(iw-min(iw,%d))/2':y='(ih-min(ih,%d))/2'%s",
 			scaled, width, height, width, height, cropped)
@@ -1078,7 +1089,7 @@ func encoderArgs(encoder string, quality int) []string {
 	case "h264_nvenc":
 		return []string{"-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", q, "-b:v", "0"}
 	case "h264_amf":
-		return []string{"-c:v", "h264_amf", "-quality", "quality", "-rc", "cqp", "-qp_i", q, "-qp_p", q, "-qp_b", q}
+		return []string{"-c:v", "h264_amf", "-quality", "balanced", "-rc", "cqp", "-qp_i", q, "-qp_p", q, "-qp_b", q}
 	default:
 		return []string{"-c:v", "libx264", "-preset", "veryfast", "-crf", q}
 	}

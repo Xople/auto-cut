@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"autocut/internal/config"
@@ -141,6 +143,8 @@ func (s *Service) Asset(projectID, assetID string) (*models.Asset, error) {
 	return s.db.GetAsset(projectID, assetID)
 }
 
+var assetIDSeq uint64
+
 // Import copies an uploaded file into the project folder and derives preview metadata.
 func (s *Service) Import(projectID string, src io.Reader, filename string) (*models.Asset, error) {
 	if _, err := s.db.GetProject(projectID); err != nil {
@@ -152,7 +156,8 @@ func (s *Service) Import(projectID string, src io.Reader, filename string) (*mod
 		return nil, err
 	}
 
-	assetID := fmt.Sprintf("asset_%d", time.Now().UnixNano())
+	seq := atomic.AddUint64(&assetIDSeq, 1)
+	assetID := fmt.Sprintf("asset_%d_%d", time.Now().UnixNano(), seq)
 	safe := sanitizeFileName(filename)
 	storedName := assetID + "_" + safe
 	assetPath := filepath.Join(s.assetsDir(projectID), storedName)
@@ -205,25 +210,35 @@ func (s *Service) finishImport(projectID, assetID, storedName, assetPath, kind, 
 		Size:      info.Size,
 	}
 
+	var wg sync.WaitGroup
 	if kind == models.AssetVideo || kind == models.AssetImage {
-		thumbPath := filepath.Join(s.thumbsDir(projectID), assetID+".jpg")
-		if err := s.ffmpeg.CreateThumbnail(assetPath, thumbPath, kind == models.AssetVideo); err != nil {
-			logger.Error("[Project] thumbnail failed for %s: %v", storedName, err)
-		} else {
-			asset.ThumbPath = thumbPath
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			thumbPath := filepath.Join(s.thumbsDir(projectID), assetID+".jpg")
+			if err := s.ffmpeg.CreateThumbnail(assetPath, thumbPath, kind == models.AssetVideo); err != nil {
+				logger.Error("[Project] thumbnail failed for %s: %v", storedName, err)
+			} else {
+				asset.ThumbPath = thumbPath
+			}
+		}()
 	}
 
 	if kind == models.AssetAudio || (kind == models.AssetVideo && info.HasAudio) {
-		wavePath := filepath.Join(s.waveformsDir(projectID), assetID+".json")
 		if info.Duration > 0 {
-			if err := s.ffmpeg.ComputeWaveform(assetPath, wavePath, info.Duration, 1200); err != nil {
-				logger.Error("[Project] waveform failed for %s: %v", storedName, err)
-			} else {
-				asset.WaveformPath = wavePath
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				wavePath := filepath.Join(s.waveformsDir(projectID), assetID+".json")
+				if err := s.ffmpeg.ComputeWaveform(assetPath, wavePath, info.Duration, 1200); err != nil {
+					logger.Error("[Project] waveform failed for %s: %v", storedName, err)
+				} else {
+					asset.WaveformPath = wavePath
+				}
+			}()
 		}
 	}
+	wg.Wait()
 
 	if err := s.db.AddAsset(asset); err != nil {
 		_ = os.Remove(assetPath)

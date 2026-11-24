@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -53,7 +54,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "autocut-mcp: failed reading --args-file %s: %v\n", *argsFile, err)
 				os.Exit(1)
 			}
-			rawArgs = fileBytes
+			rawArgs = bytes.TrimPrefix(fileBytes, []byte{0xEF, 0xBB, 0xBF})
 		}
 		res, err := srv.CallTool(context.Background(), *callTool, rawArgs)
 		if err != nil {

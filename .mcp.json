@@ -4,7 +4,8 @@
       "command": "D:\\Dev\\.Projects\\AutoCut\\bin\\autocut-mcp.exe",
       "args": [],
       "env": {
-        "BROLL_ENGINE_DIR": "D:\\Dev\\.Projects\\BRollEngine"
+        "BROLL_ENGINE_DIR": "D:\\Dev\\.Projects\\BRollEngine",
+        "DROPLOAD_DIR": "D:\\Dev\\.Projects\\DropLoad"
       }
     }
   }
