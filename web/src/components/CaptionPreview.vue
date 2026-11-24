@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useEditor } from '../stores/editor'
-import type { PreviewTextPose } from '../lib/previewTextDrag'
+import type { PreviewPose } from '../lib/previewDrag'
 import { blendCSS, captionPosition, type CaptionStyle, type Clip } from '../types'
 
 const props = defineProps<{
@@ -9,7 +9,7 @@ const props = defineProps<{
   clip: Clip
   trackId: string
   editable: boolean
-  draft: (PreviewTextPose & { clipId: string }) | null
+  draft: (PreviewPose & { clipId: string }) | null
   displayHeight: number
   playhead: number
 }>()
@@ -94,7 +94,7 @@ const words = computed(() => {
 
 <template>
   <div class="caption-layer" :inert="!editable">
-    <div class="caption-line" :data-preview-text="clip.id" :class="{ editable, selected }" :style="containerStyle"
+    <div class="caption-line" :data-preview-clip="clip.id" :class="{ editable, selected }" :style="containerStyle"
       @pointerdown="editable && emit('drag', $event, trackId, clip)" @click.stop>
       <template v-if="words.length">
         <span

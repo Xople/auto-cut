@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Clapperboard, Download, FolderOpen, X } from 'lucide-vue-next'
+import { Check, Clapperboard, Download, FolderOpen } from 'lucide-vue-next'
+import AppDialog from './AppDialog.vue'
 import { api, exportDownloadUrl, revealExport, subscribeTask } from '../api'
 import { useEditor } from '../stores/editor'
 import { formatBytes, formatSecondsShort } from '../lib/format'
@@ -177,116 +178,100 @@ async function revealOutput() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="modelValue" class="modal-backdrop" @click.self="close">
-      <div class="modal export-modal">
-        <header class="modal-header">
-          <div class="modal-title">
-            <Clapperboard :size="17" />
-            Export Video
-            <span class="badge teal">mp4 · h264</span>
-          </div>
-          <button class="icon-btn" @click="close"><X :size="16" /></button>
-        </header>
-
-        <div class="modal-body">
-          <div class="field">
-            <label class="field-label">Nama file</label>
-            <div class="filename-row">
-              <input v-model="filename" class="input" :disabled="running" spellcheck="false" />
-              <span class="filename-ext">.mp4</span>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="field">
-              <label class="field-label">Resolusi</label>
-              <select v-model="preset" class="select" :disabled="running">
-                <option v-for="item in presets" :key="item.value" :value="item.value">{{ item.label }}</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label">Frame rate</label>
-              <input class="input" :value="`${editor.project?.fps ?? 30} fps`" disabled />
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="field">
-              <label class="field-label">Encoder</label>
-              <select v-model="encoder" class="select" :disabled="running">
-                <option value="auto">Auto (AMF → x264)</option>
-                <option value="h264_amf">AMD AMF (GPU)</option>
-                <option value="h264_nvenc">NVIDIA NVENC</option>
-                <option value="libx264">libx264 (CPU)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label">
-                Quality
-                <span class="value">CQ {{ quality }}</span>
-              </label>
-              <input v-model.number="quality" type="range" min="16" max="30" step="1" :disabled="running" />
-            </div>
-          </div>
-
-          <div class="summary">
-            <div class="summary-row"><span>Durasi</span><span>{{ formatSecondsShort(editor.duration) }}</span></div>
-            <div class="summary-row">
-              <span>Ukuran</span><span>{{ resolution.width }}×{{ resolution.height }}</span>
-            </div>
-            <div class="summary-row">
-              <span>Estimasi</span><span>≈ {{ formatBytes(estimatedBytes) }}</span>
-            </div>
-          </div>
-
-          <div v-if="running || progress > 0" class="progress-block">
-            <div class="progress-head">
-              <span>{{ message || 'Merender...' }}</span>
-              <span class="value">{{ Math.round(progress * 100) }}%</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
-            </div>
-          </div>
-
-          <div v-if="error" class="error-text">{{ error }}</div>
-
-          <div v-if="job && job.status === 'completed'" class="done-box">
-            <div class="done-mark"><Check :size="15" /></div>
-            <div class="done-body">
-              <strong>{{ job.output_name }}</strong>
-              <span class="hint">Render selesai dalam {{ formatSecondsShort(editor.duration) }} timeline.</span>
-            </div>
-          </div>
-
-          <div class="hint">
-            Export memakai satu filter graph ffmpeg. Caption dibakar via ASS; blend mode caption hanya tampil di
-            preview, bukan hasil export.
-          </div>
-        </div>
-
-        <footer class="modal-footer">
-          <button v-if="downloadHref" class="btn btn-ghost" @click="startExport">
-            <Clapperboard :size="14" />
-            Render ulang
-          </button>
-          <button v-if="downloadHref" class="btn" @click="revealOutput">
-            <FolderOpen :size="14" />
-            Buka folder
-          </button>
-          <a v-if="downloadHref" class="btn btn-primary" :href="downloadHref" :download="job?.output_name">
-            <Download :size="14" />
-            Unduh MP4
-          </a>
-          <button v-else class="btn btn-primary" :disabled="running || !editor.project" @click="startExport">
-            <Clapperboard :size="14" />
-            {{ running ? 'Merender...' : 'Mulai Export' }}
-          </button>
-        </footer>
+  <AppDialog v-if="modelValue" class="export-modal" heading="Export Video" :icon="Clapperboard" detail="MP4 � H.264" @dismiss="close">
+    <div class="field">
+      <label class="field-label">Nama file</label>
+      <div class="filename-row">
+        <input v-model="filename" class="input" :disabled="running" spellcheck="false" />
+        <span class="filename-ext">.mp4</span>
       </div>
     </div>
-  </Teleport>
+
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">Resolusi</label>
+        <select v-model="preset" class="select" :disabled="running">
+          <option v-for="item in presets" :key="item.value" :value="item.value">{{ item.label }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Frame rate</label>
+        <input class="input" :value="`${editor.project?.fps ?? 30} fps`" disabled />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">Encoder</label>
+        <select v-model="encoder" class="select" :disabled="running">
+          <option value="auto">Auto (AMF → x264)</option>
+          <option value="h264_amf">AMD AMF (GPU)</option>
+          <option value="h264_nvenc">NVIDIA NVENC</option>
+          <option value="libx264">libx264 (CPU)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">
+          Quality
+          <span class="value">CQ {{ quality }}</span>
+        </label>
+        <input v-model.number="quality" type="range" min="16" max="30" step="1" :disabled="running" />
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-row"><span>Durasi</span><span>{{ formatSecondsShort(editor.duration) }}</span></div>
+      <div class="summary-row">
+        <span>Ukuran</span><span>{{ resolution.width }}×{{ resolution.height }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Estimasi</span><span>≈ {{ formatBytes(estimatedBytes) }}</span>
+      </div>
+    </div>
+
+    <div v-if="running || progress > 0" class="progress-block">
+      <div class="progress-head">
+        <span>{{ message || 'Merender...' }}</span>
+        <span class="value">{{ Math.round(progress * 100) }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
+      </div>
+    </div>
+
+    <div v-if="error" class="error-text">{{ error }}</div>
+
+    <div v-if="job && job.status === 'completed'" class="done-box">
+      <div class="done-mark"><Check :size="15" /></div>
+      <div class="done-body">
+        <strong>{{ job.output_name }}</strong>
+        <span class="hint">Render selesai dalam {{ formatSecondsShort(editor.duration) }} timeline.</span>
+      </div>
+    </div>
+
+    <div class="hint">
+      Export memakai satu filter graph ffmpeg. Caption dibakar via ASS; blend mode caption hanya tampil di
+      preview, bukan hasil export.
+    </div>
+    <template #footer>
+      <button v-if="downloadHref" class="btn btn-ghost" @click="startExport">
+        <Clapperboard :size="14" />
+        Render ulang
+      </button>
+      <button v-if="downloadHref" class="btn" @click="revealOutput">
+        <FolderOpen :size="14" />
+        Buka folder
+      </button>
+      <a v-if="downloadHref" class="btn btn-primary" :href="downloadHref" :download="job?.output_name">
+        <Download :size="14" />
+        Unduh MP4
+      </a>
+      <button v-else class="btn btn-primary" :disabled="running || !editor.project" @click="startExport">
+        <Clapperboard :size="14" />
+        {{ running ? 'Merender...' : 'Mulai Export' }}
+      </button>
+    </template>
+  </AppDialog>
 </template>
 
 <style scoped>

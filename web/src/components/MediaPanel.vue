@@ -5,7 +5,7 @@ import { thumbUrl } from '../api'
 import { useEditor } from '../stores/editor'
 import FontPicker from './FontPicker.vue'
 import ClipLibrary from './ClipLibrary.vue'
-import { defaultTextStyle, type LibraryTool, type Asset, type TextStyle } from '../types'
+import { MUSIC_TRACK_ID, defaultTextStyle, type LibraryTool, type Asset, type TextStyle } from '../types'
 import { formatSecondsShort } from '../lib/format'
 
 const editor = useEditor()
@@ -24,6 +24,7 @@ const brokenThumbs = ref<Record<string, boolean>>({})
 const dragGhost = ref<{ asset: Asset; x: number; y: number } | null>(null)
 
 const projectId = computed(() => editor.project?.id ?? '')
+const musicTrack = computed(() => editor.project?.timeline.tracks.find(track => track.id === MUSIC_TRACK_ID && track.kind === 'audio'))
 
 function pickFiles() {
   fileInput.value?.click()
@@ -238,6 +239,10 @@ function addPreset(patch: Partial<TextStyle>, sample: string) {
             <div class="asset-actions">
               <button class="mini-btn" title="Tambah ke timeline" @click.stop="editor.addAsset(asset)">
                 <Plus :size="13" />
+              </button>
+              <button v-if="asset.kind === 'audio' && musicTrack" class="mini-btn" title="Tambah ke Musik Latar"
+                :disabled="musicTrack.locked" @dblclick.stop @click.stop="editor.addAsset(asset, undefined, musicTrack.id)">
+                <Music :size="13" />
               </button>
               <button class="mini-btn danger" title="Hapus asset" @click.stop="editor.removeAsset(asset)">
                 <Trash2 :size="13" />

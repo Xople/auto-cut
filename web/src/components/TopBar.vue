@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { ArrowLeft, Captions, Check, ChevronDown, Download, LayoutPanelTop, PanelLeft, PanelRight, RotateCcw, Redo2, Scissors, Undo2, Wand2 } from 'lucide-vue-next'
+import { ArrowLeft, Captions, Check, ChevronDown, Download, LayoutPanelTop, PanelLeft, PanelRight, RotateCcw, Redo2, Undo2, Wand2 } from 'lucide-vue-next'
 import { useEditor } from '../stores/editor'
 
 import { layouts, type Layout } from '../lib/workspaceLayout'
@@ -107,9 +107,7 @@ async function commitName() {
     </button>
 
     <div class="brand">
-      <div class="brand-mark">
-        <Scissors :size="15" />
-      </div>
+      <img class="brand-mark" src="/autocut.png" alt="AutoCut" />
     </div>
 
     <div class="project-block">
@@ -215,12 +213,7 @@ async function commitName() {
 .brand-mark {
   width: 30px;
   height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--panel-3);
-  color: var(--text);
+  display: block;
 }
 
 .project-block {

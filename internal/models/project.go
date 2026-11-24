@@ -86,12 +86,14 @@ type Clip struct {
 	LinkedID string  `json:"linked_id,omitempty"`
 
 	// Overlay transform. X/Y are the normalized center of the overlay (0..1).
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	Scale     float64 `json:"scale"`
-	Rotation  float64 `json:"rotation"`
-	Opacity   float64 `json:"opacity"`
-	BlendMode string  `json:"blend_mode"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	// Older video clips use (0,0) to mean that no position was set.
+	PositionSet bool    `json:"position_set,omitempty"`
+	Scale       float64 `json:"scale"`
+	Rotation    float64 `json:"rotation"`
+	Opacity     float64 `json:"opacity"`
+	BlendMode   string  `json:"blend_mode"`
 
 	// Text overlay content and style.
 	Text  string     `json:"text,omitempty"`
@@ -258,7 +260,13 @@ func DefaultCaptionStyle() CaptionStyle {
 	}
 }
 
-// NewTimeline builds the default four-track timeline for a new project.
+const BackgroundMusicTrackID = "audio-bgm"
+
+func newMusicTrack() Track {
+	return Track{ID: BackgroundMusicTrackID, Kind: TrackAudio, Name: "Musik Latar", Height: DefaultTrackHeight, Clips: []Clip{}}
+}
+
+// NewTimeline builds the default tracks for a new project.
 func NewTimeline(width, height int, fps float64) Timeline {
 	if width <= 0 {
 		width = 1920
@@ -279,6 +287,7 @@ func NewTimeline(width, height int, fps float64) Timeline {
 			{ID: "video-main", Kind: TrackVideo, Name: "Video", Height: DefaultTrackHeight, Clips: []Clip{}},
 			{ID: "overlay", Kind: TrackOverlay, Name: "Overlay", Height: DefaultTrackHeight, Clips: []Clip{}},
 			{ID: "audio-main", Kind: TrackAudio, Name: "Audio", Height: DefaultTrackHeight, Clips: []Clip{}},
+			newMusicTrack(),
 			{ID: "caption", Kind: TrackCaption, Name: "Caption", Height: DefaultTrackHeight, Clips: []Clip{}},
 		},
 	}

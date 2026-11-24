@@ -15,6 +15,7 @@ import {
 } from '../lib/transform'
 import {
   DEFAULT_TRANSITION_DURATION,
+  MUSIC_TRACK_ID,
   defaultClip,
   defaultTextStyle,
   type AnalysisResult,
@@ -134,7 +135,7 @@ export const useEditor = defineStore('editor', () => {
   }
 
   function trackByKind(kind: TrackKind): Track | null {
-    return project.value?.timeline.tracks.find((t) => t.kind === kind) ?? null
+    return project.value?.timeline.tracks.find((t) => t.kind === kind && t.id !== MUSIC_TRACK_ID) ?? null
   }
 
   function locateClip(clipId: string): { track: Track; clip: Clip } | null {
@@ -196,7 +197,7 @@ export const useEditor = defineStore('editor', () => {
     }
     let changed = false
     for (const track of timeline.tracks) {
-      if (track.kind !== 'audio' || track.clips.length === 0) continue
+      if (track.kind !== 'audio' || track.id === MUSIC_TRACK_ID || track.clips.length === 0) continue
       const kept: Clip[] = []
       for (const clip of track.clips) {
         const linked = clip.linked_id ? located.get(clip.linked_id) : undefined
@@ -546,18 +547,19 @@ export const useEditor = defineStore('editor', () => {
   // Once a clip has keyframes, transform edits become keyframes at the
   // playhead so every adjustment is animatable. Without keyframes they edit
   // the clip's static transform.
-  function setClipTransform(trackId: string, clipId: string, patch: Partial<TransformValue>) {
+  function setClipTransform(trackId: string, clipId: string, patch: Partial<TransformValue>, historyKey = `transform-${clipId}`) {
     const track = project.value?.timeline.tracks.find((t) => t.id === trackId)
     const clip = track?.clips.find((c) => c.id === clipId)
     if (!clip) return
     const current = transformAt(clip, playhead.value)
     const next = clampTransformPatch({ ...current, ...patch })
-    pushHistory(`transform-${clipId}`)
+    pushHistory(historyKey)
     if (hasTransformAnimation(clip)) {
       clip.keyframes = upsertTransformKeyframe(clip, playhead.value, next)
     } else {
       clip.x = next.x
       clip.y = next.y
+      if (patch.x !== undefined || patch.y !== undefined) clip.position_set = true
       clip.scale = next.scale
       clip.rotation = next.rotation
     }
@@ -575,6 +577,7 @@ export const useEditor = defineStore('editor', () => {
       if (frames.length === 0) {
         clip.x = value.x
         clip.y = value.y
+        clip.position_set = true
         clip.scale = value.scale
         clip.rotation = value.rotation
         clip.keyframes = undefined
@@ -1038,7 +1041,7 @@ export const useEditor = defineStore('editor', () => {
       overlay: 'Overlay',
       caption: 'Caption',
     }
-    const count = project.value?.timeline.tracks.filter((t) => t.kind === kind).length ?? 0
+    const count = project.value?.timeline.tracks.filter((t) => t.kind === kind && t.id !== MUSIC_TRACK_ID).length ?? 0
     return count === 0 ? labels[kind] : `${labels[kind]} ${count + 1}`
   }
 
@@ -1072,9 +1075,13 @@ export const useEditor = defineStore('editor', () => {
     let track = trackId
       ? project.value.timeline.tracks.find((t) => t.id === trackId && t.kind === kind) ?? null
       : trackByKind(kind)
-    if (!track) track = trackByKind(kind) ?? trackByKind('video')
+    if (!track) track = trackByKind(kind) ?? (kind === 'audio' ? addTrack('audio') : trackByKind('video'))
     if (!track) {
       notify('Track tujuan tidak ditemukan.', 'error')
+      return
+    }
+    if (track.locked) {
+      notify(`Track ${track.name} terkunci.`, 'info')
       return
     }
     let start = atTime ?? playhead.value
@@ -1087,6 +1094,7 @@ export const useEditor = defineStore('editor', () => {
     }
     const clip = defaultClip({
       asset_id: asset.id,
+      volume: track.id === MUSIC_TRACK_ID ? 0.12 : 1,
       start,
       duration: length,
       in: 0,
@@ -1145,25 +1153,20 @@ export const useEditor = defineStore('editor', () => {
     scheduleSave()
   }
 
-  function addTrack(kind: TrackKind): Track | null {
+  function addTrack(requested: TrackKind | 'bgm'): Track | null {
     const timeline = project.value?.timeline
     if (!timeline) return null
+    const music = requested === 'bgm'
+    const kind = requested === 'bgm' ? 'audio' : requested
+    if (music && timeline.tracks.some(track => track.id === MUSIC_TRACK_ID)) return null
     if (timeline.tracks.length >= 64) {
       notify('Batas 64 track tercapai.', 'error')
       return null
     }
-    const sameKind = timeline.tracks.filter((t) => t.kind === kind)
-    const labels: Record<TrackKind, string> = {
-      video: 'Video',
-      audio: 'Audio',
-      overlay: 'Overlay',
-      caption: 'Caption',
-    }
-    const name = sameKind.length === 0 ? labels[kind] : `${labels[kind]} ${sameKind.length + 1}`
     const track: Track = {
-      id: `${kind}-${Date.now().toString(36)}`,
+      id: music ? MUSIC_TRACK_ID : `${kind}-${Date.now().toString(36)}`,
       kind,
-      name,
+      name: music ? 'Musik Latar' : nextTrackName(kind),
       muted: false,
       locked: false,
       hidden: false,
@@ -1171,7 +1174,7 @@ export const useEditor = defineStore('editor', () => {
       clips: [],
     }
     const index = timeline.tracks.findIndex((t) => t.kind === kind)
-    mutate(() => timeline.tracks.splice(index < 0 ? timeline.tracks.length : index, 0, track))
+    mutate(() => timeline.tracks.splice(index < 0 ? timeline.tracks.length : index + (music ? 1 : 0), 0, track))
     return track
   }
 

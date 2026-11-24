@@ -133,7 +133,7 @@ func (s *Server) registerAutoCutTools() {
 			"type": "object",
 			"properties": map[string]any{
 				"project_id": map[string]any{"type": "string", "description": "Project ID"},
-				"track_id":   map[string]any{"type": "string", "description": "Target track ID (e.g. 'video-main', 'audio-main', 'overlay', 'caption')"},
+				"track_id":   map[string]any{"type": "string", "description": "Target track ID (e.g. 'video-main', 'audio-main', 'audio-bgm', 'overlay', 'caption')"},
 				"clip":       map[string]any{"type": "object", "description": "Clip object to insert or update"},
 			},
 			"required": []string{"project_id", "track_id", "clip"},
@@ -695,7 +695,7 @@ func (s *Server) handleGenerateCaptions(_ context.Context, raw json.RawMessage) 
 	}
 	var sources []models.Clip
 	for _, track := range p.Timeline.Tracks {
-		if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+		if track.ID == models.BackgroundMusicTrackID || track.ID == "audio-sfx" {
 			continue
 		}
 		if track.Kind == models.TrackAudio || track.Kind == models.TrackVideo {
@@ -950,28 +950,26 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 		if bgmAsset.Duration > 0 && bgmIn+bgmDur > bgmAsset.Duration {
 			bgmDur = bgmAsset.Duration - bgmIn
 		}
-		tl.Tracks = append(tl.Tracks, models.Track{
-			ID:     "audio-bgm",
-			Kind:   models.TrackAudio,
-			Name:   "BGM",
-			Height: models.DefaultTrackHeight,
-			Clips: []models.Clip{
-				{
-					ID:       "clip_bgm_main",
-					AssetID:  bgmAsset.ID,
-					Start:    0,
-					Duration: bgmDur,
-					In:       bgmIn,
-					Out:      bgmIn + bgmDur,
-					Speed:    1,
-					Scale:    1,
-					Opacity:  1,
-					Volume:   bgmVol,
-					FadeIn:   args.BGM.FadeIn,
-					FadeOut:  args.BGM.FadeOut,
-				},
-			},
-		})
+		clip := models.Clip{
+			ID:       "clip_bgm_main",
+			AssetID:  bgmAsset.ID,
+			Start:    0,
+			Duration: bgmDur,
+			In:       bgmIn,
+			Out:      bgmIn + bgmDur,
+			Speed:    1,
+			Scale:    1,
+			Opacity:  1,
+			Volume:   bgmVol,
+			FadeIn:   args.BGM.FadeIn,
+			FadeOut:  args.BGM.FadeOut,
+		}
+		for i := range tl.Tracks {
+			if tl.Tracks[i].ID == models.BackgroundMusicTrackID {
+				tl.Tracks[i].Clips = []models.Clip{clip}
+				break
+			}
+		}
 	}
 
 	// Auto-generate gated captions
@@ -984,7 +982,7 @@ func (s *Server) handleAssembleShort(_ context.Context, raw json.RawMessage) (an
 		if tr, err := s.projects.Transcript(args.ProjectID); err == nil && len(tr.Words) > 0 {
 			var voClips []models.Clip
 			for _, track := range tl.Tracks {
-				if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+				if track.ID == models.BackgroundMusicTrackID || track.ID == "audio-sfx" {
 					continue
 				}
 				if track.Kind == models.TrackAudio {

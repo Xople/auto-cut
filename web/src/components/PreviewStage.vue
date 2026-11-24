@@ -1,24 +1,35 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect, type CSSProperties } from 'vue'
-import { ChevronDown, Diamond, Type, Maximize, Minimize, Music, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-vue-next'
+import { ChevronDown, Diamond, Layers, Maximize, Minimize, Music, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX, ZoomIn, ZoomOut } from 'lucide-vue-next'
 import { assetUrl, thumbUrl } from '../api'
 import { useEditor } from '../stores/editor'
 import { formatTime, timecode } from '../lib/format'
 import { keyframeAt, transformAt } from '../lib/transform'
-import { usePreviewTextDrag } from '../lib/previewTextDrag'
+import { usePreviewDrag } from '../lib/previewDrag'
 import OverlayPreview from './OverlayPreview.vue'
 import CaptionPreview from './CaptionPreview.vue'
-import { blendCSS, videoEffectFilter, type Asset, type Clip } from '../types'
+import PlatformGuide from './PlatformGuide.vue'
+import { MUSIC_TRACK_ID, blendCSS, videoEffectFilter, type Asset, type Clip } from '../types'
 
 const editor = useEditor()
-const { draft: textDraft, begin: beginTextDrag } = usePreviewTextDrag()
-let pickedTextId: string | null = null
+const { draft: dragDraft, begin: beginDrag } = usePreviewDrag()
+let pickedClipId: string | null = null
+let pressedClip = false
 const shell = ref<HTMLElement | null>(null)
-const stageEl = ref<HTMLElement | null>(null)
 const stageSize = ref({ width: 0, height: 0 })
 const player = ref<HTMLElement | null>(null)
 const expanded = ref(false)
 const windowPreview = ref(false)
+const viewport = ref<HTMLElement | null>(null)
+const zoomPercent = ref(100)
+const fullscreenZoom = ref(100)
+const activeZoom = computed(() => expanded.value ? fullscreenZoom.value : zoomPercent.value)
+const guide = ref<'off' | 'shorts' | 'tiktok'>('off')
+
+function changeZoom(step: number) {
+  const zoom = expanded.value ? fullscreenZoom : zoomPercent
+  zoom.value = Math.max(25, Math.min(300, zoom.value + step * 25))
+}
 
 async function toggleFullscreen() {
   if (windowPreview.value) {
@@ -41,9 +52,19 @@ function syncFullscreen() {
 }
 
 function onPreviewKey(event: KeyboardEvent) {
-  if (!expanded.value || event.key !== 'Escape') return
-  event.stopImmediatePropagation()
-  void toggleFullscreen()
+  if (expanded.value && event.key === 'Escape') {
+    event.stopImmediatePropagation()
+    void toggleFullscreen()
+    return
+  }
+  if (!event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return
+  const plus = event.key === '+' || event.key === '=' || event.code === 'Equal' || event.code === 'NumpadAdd'
+  const minus = event.key === '-' || event.code === 'Minus' || event.code === 'NumpadSubtract'
+  if (!plus && !minus) return
+  if (document.querySelector('dialog:modal')) return
+  event.preventDefault()
+  event.stopPropagation()
+  changeZoom(plus ? 1 : -1)
 }
 const videoRefs = new Map<string, HTMLVideoElement>()
 const muted = ref(false)
@@ -147,7 +168,7 @@ const selectedVideoLayer = computed(() => {
 })
 
 const selectedTransform = computed(() =>
-  selectedVideoLayer.value ? transformAt(selectedVideoLayer.value.clip, editor.playhead) : null,
+  selectedVideoLayer.value ? previewTransform(selectedVideoLayer.value.clip) : null,
 )
 
 const hasKeyframeHere = computed(() =>
@@ -159,7 +180,7 @@ const keyframeCount = computed(() => selectedVideoLayer.value?.clip.keyframes?.l
 const linkedAudioTargets = computed(() => {
   const ids = new Set<string>()
   for (const track of timeline.value.tracks) {
-    if (track.kind !== 'audio') continue
+    if (track.kind !== 'audio' || track.id === MUSIC_TRACK_ID) continue
     for (const clip of track.clips) if (clip.linked_id) ids.add(clip.linked_id)
   }
   return ids
@@ -175,7 +196,7 @@ const mirroredAudioClips = computed(() => {
       if (!clip.asset_id) continue
       const twin = timeline.value.tracks.some(
         (audioTrack) =>
-          audioTrack.kind === 'audio' &&
+          audioTrack.kind === 'audio' && audioTrack.id !== MUSIC_TRACK_ID &&
           audioTrack.clips.some(
             (audio) =>
               audio.asset_id === clip.asset_id &&
@@ -195,6 +216,15 @@ const mirroredAudioClips = computed(() => {
 // play their own built-in audio directly on their <video> element.
 const activeAudio = shallowRef<Array<{ clip: Clip; volume: number; active: boolean }>>([])
 
+function audioVolumeAt(clip: Clip, time: number) {
+  if (clip.duration <= 0) return 0
+  const elapsed = Math.max(0, time - clip.start)
+  const remaining = Math.max(0, clip.duration - elapsed)
+  const fadeIn = clip.fade_in > 0 ? Math.min(1, elapsed / Math.min(clip.fade_in, clip.duration)) : 1
+  const fadeOut = clip.fade_out > 0 ? Math.min(1, remaining / Math.min(clip.fade_out, clip.duration)) : 1
+  return clip.volume * fadeIn * fadeOut
+}
+
 watchEffect(() => {
   const result: Array<{ clip: Clip; volume: number; active: boolean }> = []
   const t = editor.playhead
@@ -204,7 +234,7 @@ watchEffect(() => {
       if (clip.volume <= 0.0001) continue
       if (!shouldMountAudio(clip, t)) continue
       const active = contains(clip, t)
-      result.push({ clip, volume: clip.volume, active })
+      result.push({ clip, volume: active ? audioVolumeAt(clip, t) : 0, active })
     }
   }
   const prev = activeAudio.value
@@ -238,29 +268,32 @@ const activeCaptions = computed(() => {
   return items
 })
 
-const visibleText = computed(() => [
+const visibleClips = computed(() => [
   ...activeCaptions.value,
-  ...overlayItems.value.filter(item => item.clip.text?.trim()),
+  ...overlayItems.value,
+  ...activeVideoLayers.value,
 ])
 
-function selectPreviewText(event: Event) {
+function selectPreviewClip(event: Event) {
   const id = (event.target as HTMLSelectElement).value
-  const item = visibleText.value.find(item => item.clip.id === id)
+  const item = visibleClips.value.find(item => item.clip.id === id)
   if (!item) return
   editor.pause()
   editor.select(item.trackId, id)
-  pickedTextId = id
+  pickedClipId = id
 }
 
-// The picker gives a covered text item priority on the next drag inside its bounds.
-function startPickedText(event: PointerEvent) {
-  const id = pickedTextId
-  pickedTextId = null
+// The picker gives a covered item priority on the next drag inside its bounds.
+function onStagePointerDown(event: PointerEvent) {
+  if (!event.isPrimary) return
+  pressedClip = event.target instanceof Element && !!event.target.closest('[data-preview-clip]')
+  const id = pickedClipId
+  pickedClipId = null
   if (!id || expanded.value || id !== editor.selectedClip?.id || !editor.selectedTrack) return
   const hits = document.elementsFromPoint(event.clientX, event.clientY)
-  const match = hits.find((el): el is HTMLElement => el instanceof HTMLElement && el.dataset.previewText === id)
+  const match = hits.find((el): el is HTMLElement => el instanceof HTMLElement && el.dataset.previewClip === id)
   if (match && !match.contains(event.target as Node)) {
-    beginTextDrag(event, editor.selectedTrack.id, editor.selectedClip, 'move', match)
+    beginDrag(event, editor.selectedTrack.id, editor.selectedClip, 'move', match)
   }
 }
 
@@ -274,8 +307,18 @@ const audioOnlyName = computed(() => {
 
 const stageStyle = computed(() => {
   if (!stageSize.value.width) return { width: '100%', height: '100%' }
-  return { width: `${stageSize.value.width}px`, height: `${stageSize.value.height}px` }
+  return {
+    width: `${stageSize.value.width}px`,
+    height: `${stageSize.value.height}px`,
+    zoom: activeZoom.value / 100,
+  }
 })
+
+watch(expanded, () => { fullscreenZoom.value = 100 })
+watch([activeZoom, expanded], () => {
+  const view = viewport.value
+  if (view) view.scrollTo((view.scrollWidth - view.clientWidth) / 2, (view.scrollHeight - view.clientHeight) / 2)
+}, { flush: 'post' })
 
 const ratio = computed(() => project.value.width / project.value.height)
 
@@ -312,8 +355,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncFullscreen)
   window.removeEventListener('keydown', onPreviewKey, true)
   observer?.disconnect()
-  transformDrag = null
-  window.removeEventListener('pointermove', onTransformDragMove)
   videoRefs.forEach((el) => el.pause())
   videoRefs.clear()
   audioRefs.forEach((el) => el.pause())
@@ -446,9 +487,8 @@ function bgVideoLayerStyle(clip: Clip): CSSProperties {
   const blurPx = Math.max(8, Math.round((clip.background_blur ?? 24) * 0.75))
   const brightness = Math.max(0.3, 1 - (clip.background_dim ?? 0.14))
   return {
-    opacity: clip.opacity,
     objectFit: 'cover',
-    filter: `${videoEffectFilter(clip.video_effect, clip.effect_intensity)} blur(${blurPx}px) brightness(${brightness.toFixed(2)})`,
+    filter: `blur(${blurPx}px) brightness(${brightness.toFixed(2)})`,
     transform: 'scale(1.12)',
   }
 }
@@ -467,12 +507,20 @@ function outgoingTransitionFor(clip: Clip) {
   return null
 }
 
-function transformCSS(clip: Clip): string {
+function previewTransform(clip: Clip) {
   const value = transformAt(clip, editor.playhead)
-  return (
-    `translate(${((value.x - 0.5) * 100).toFixed(3)}%, ${((value.y - 0.5) * 100).toFixed(3)}%) ` +
-    `scale(${value.scale.toFixed(4)}) rotate(${value.rotation.toFixed(2)}deg)`
-  )
+  const draft = dragDraft.value
+  return draft?.clipId === clip.id ? { ...value, x: draft.x, y: draft.y, scale: draft.scale } : value
+}
+
+// The draggable area follows the displayed media, excluding transparent letterboxing.
+function videoBounds(clip: Clip, asset: Asset): CSSProperties {
+  if (clip.background_fill === 'blur' || !asset.width || !asset.height) return {}
+  const relativeAspect = (asset.width / asset.height) / ratio.value
+  return {
+    width: `${Math.min(1, relativeAspect) * 100}%`,
+    height: `${Math.min(1, 1 / relativeAspect) * 100}%`,
+  }
 }
 
 function videoLayerStyle(clip: Clip): CSSProperties {
@@ -586,7 +634,7 @@ function videoLayerStyle(clip: Clip): CSSProperties {
     }
   }
 
-  const value = transformAt(clip, editor.playhead)
+  const value = previewTransform(clip)
   const s = (value.scale * scaleFactor).toFixed(4)
   style.transform =
     `translate(${((value.x - 0.5) * 100).toFixed(3)}%, ${((value.y - 0.5) * 100).toFixed(3)}%) ` +
@@ -594,80 +642,6 @@ function videoLayerStyle(clip: Clip): CSSProperties {
     `rotate(${(value.rotation + rotOffset).toFixed(2)}deg)`
   style.filter = [videoEffectFilter(clip.video_effect, clip.effect_intensity), style.filter].filter(Boolean).join(' ')
   return style
-}
-
-const frameStyle = computed<CSSProperties>(() => {
-  const layer = selectedVideoLayer.value
-  if (!layer) return {}
-  return { transform: transformCSS(layer.clip) }
-})
-
-type DragMode = 'move' | 'scale'
-
-let transformDrag:
-  | {
-      mode: DragMode
-      startX: number
-      startY: number
-      rect: DOMRect
-      start: { x: number; y: number; scale: number; rotation: number }
-      center: { x: number; y: number }
-      startDistance: number
-      moved: boolean
-    }
-  | null = null
-
-function beginTransformDrag(event: PointerEvent, mode: DragMode) {
-  const layer = selectedVideoLayer.value
-  if (!layer || !stageEl.value) return
-  const rect = stageEl.value.getBoundingClientRect()
-  const start = transformAt(layer.clip, editor.playhead)
-  const center = {
-    x: rect.left + rect.width / 2 + (start.x - 0.5) * rect.width,
-    y: rect.top + rect.height / 2 + (start.y - 0.5) * rect.height,
-  }
-  transformDrag = {
-    mode,
-    startX: event.clientX,
-    startY: event.clientY,
-    rect,
-    start,
-    center,
-    startDistance: Math.max(1, Math.hypot(event.clientX - center.x, event.clientY - center.y)),
-    moved: false,
-  }
-  event.preventDefault()
-  event.stopPropagation()
-  window.addEventListener('pointermove', onTransformDragMove)
-  window.addEventListener('pointerup', onTransformDragEnd, { once: true })
-}
-
-function onTransformDragMove(event: PointerEvent) {
-  const drag = transformDrag
-  const layer = selectedVideoLayer.value
-  const selection = editor.selection
-  if (!drag || !layer || !selection) return
-  if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 3) drag.moved = true
-  if (drag.mode === 'move') {
-    const dx = (event.clientX - drag.startX) / drag.rect.width
-    const dy = (event.clientY - drag.startY) / drag.rect.height
-    editor.setClipTransform(selection.trackId, layer.clip.id, {
-      x: drag.start.x + dx,
-      y: drag.start.y + dy,
-    })
-    return
-  }
-  const distance = Math.hypot(event.clientX - drag.center.x, event.clientY - drag.center.y)
-  editor.setClipTransform(selection.trackId, layer.clip.id, {
-    scale: (drag.start.scale * distance) / drag.startDistance,
-  })
-}
-
-function onTransformDragEnd() {
-  const drag = transformDrag
-  transformDrag = null
-  window.removeEventListener('pointermove', onTransformDragMove)
-  if (drag && drag.mode === 'move' && !drag.moved) editor.togglePlay()
 }
 
 function toggleSelectedKeyframe() {
@@ -686,7 +660,7 @@ function onMediaReady(clip: Clip, el: EventTarget | null, isAudio = false, activ
   const media = el as HTMLMediaElement | null
   if (!media) return
   if (isAudio) {
-    media.volume = muted.value ? 0 : Math.max(0, Math.min(1, clip.volume))
+    media.volume = active && !muted.value ? Math.max(0, Math.min(1, audioVolumeAt(clip, editor.playhead))) : 0
   }
   syncElement(media, clip, true, isAudio, active)
 }
@@ -716,54 +690,47 @@ watch(
 
 <template>
   <section ref="player" class="preview-panel" :class="{ expanded, 'window-preview': windowPreview }">
+    <div v-if="!expanded" class="view-controls">
+      <div class="zoom-controls" role="group" aria-label="Zoom preview">
+        <button class="stage-tool icon" title="Perkecil preview (Ctrl −)" aria-label="Perkecil preview" aria-keyshortcuts="Control+-"
+          :disabled="zoomPercent <= 25" @click="changeZoom(-1)"><ZoomOut :size="15" /></button>
+        <button class="stage-tool zoom-value" title="Paskan preview ke panel" @click="zoomPercent = 100">{{ zoomPercent }}%</button>
+        <button class="stage-tool icon" title="Perbesar preview (Ctrl +)" aria-label="Perbesar preview" aria-keyshortcuts="Control+plus Control+="
+          :disabled="zoomPercent >= 300" @click="changeZoom(1)"><ZoomIn :size="15" /></button>
+      </div>
+      <select v-model="guide" class="guide-picker" aria-label="Panduan platform"
+        title="Tampilkan simulasi antarmuka platform di atas video">
+        <option value="off">Tanpa panduan</option>
+        <option value="shorts">YouTube Shorts</option>
+        <option value="tiktok">TikTok</option>
+      </select>
+    </div>
     <div ref="shell" class="preview-shell">
-      <div ref="stageEl" class="stage" :style="stageStyle" @pointerdown.capture="startPickedText" @click="editor.togglePlay()">
-        <template v-for="layer in visualLayers" :key="`${layer.kind}-${layer.clip.id}`">
-          <img
-            v-if="layer.kind === 'video' && layer.asset && layer.active && layer.clip.background_fill === 'blur'"
-            class="stage-video stage-video-bg"
-            :style="bgVideoLayerStyle(layer.clip)"
-            :src="thumbUrl(project.id, layer.asset.id)"
-            alt=""
-          />
-          <video
-            v-if="layer.kind === 'video' && layer.asset"
-            :ref="bindVideoRef(layer.clip.id)"
-            class="stage-video"
-            :style="
-              layer.active
-                ? videoLayerStyle(layer.clip)
-                : { opacity: 0, pointerEvents: 'none', visibility: 'hidden' }
-            "
-            :src="assetUrl(project.id, layer.asset.id)"
-            preload="auto"
+      <div ref="viewport" class="preview-viewport">
+      <div class="stage" :style="stageStyle" @pointerdown.capture="onStagePointerDown" @click="!pressedClip && editor.togglePlay()">
+        <div v-for="layer in videoLayers" :key="layer.clip.id" class="video-layer"
+          :style="layer.active ? videoLayerStyle(layer.clip) : { visibility: 'hidden' }">
+          <img v-if="layer.active && layer.asset && layer.clip.background_fill === 'blur'"
+            class="stage-video" :style="bgVideoLayerStyle(layer.clip)" :src="thumbUrl(project.id, layer.asset.id)" alt="" />
+          <video v-if="layer.asset" :ref="bindVideoRef(layer.clip.id)" class="stage-video"
+            :src="assetUrl(project.id, layer.asset.id)" preload="auto" playsinline
             :muted="!layer.active || videoClipVolume(layer.clip, layer.trackId) <= 0.0001"
-            playsinline
-            @loadedmetadata="onMediaReady(layer.clip, $event.target, false, layer.active)"
-          />
-        </template>
-
-        <div
-          v-if="!expanded && selectedVideoLayer && selectedTransform"
-          class="transform-frame"
-          :style="frameStyle"
-          @pointerdown="beginTransformDrag($event, 'move')"
-          @click.stop
-        >
-          <button
-            v-for="corner in ['nw', 'ne', 'se', 'sw']"
-            :key="corner"
-            class="transform-handle"
-            :class="corner"
-            :title="`Skala ${Math.round((selectedTransform?.scale ?? 1) * 100)}%`"
-            @pointerdown.stop="beginTransformDrag($event, 'scale')"
-            @click.stop
-          />
+            @loadedmetadata="onMediaReady(layer.clip, $event.target, false, layer.active)" />
+          <div v-if="!expanded && layer.active && layer.asset" class="video-target"
+            :class="{ selected: selectedVideoLayer === layer }" :data-preview-clip="layer.clip.id"
+            :style="videoBounds(layer.clip, layer.asset)"
+            @pointerdown="beginDrag($event, layer.trackId, layer.clip)" @click.stop>
+            <template v-if="selectedVideoLayer === layer && !editor.selectedTrack?.locked">
+              <button v-for="corner in ['nw', 'ne', 'se', 'sw']" :key="corner"
+                class="transform-handle" :class="corner" title="Tarik untuk mengubah skala video"
+                @pointerdown.stop="beginDrag($event, layer.trackId, layer.clip, 'scale')" @click.stop />
+            </template>
+          </div>
         </div>
 
         <OverlayPreview
           :inert="expanded" :class="{ 'clean-overlay': expanded }"
-          :overlays="overlayItems" :draft="textDraft" @drag="beginTextDrag"
+          :overlays="overlayItems" :draft="dragDraft" @drag="beginDrag"
           :project="project"
           :project-id="project.id"
           :display-height="stageSize.height"
@@ -786,17 +753,19 @@ watch(
         <CaptionPreview
           :style="timeline.caption_style"
           v-for="item in activeCaptions" :key="item.clip.id"
-          :draft="textDraft" @drag="beginTextDrag"
+          :draft="dragDraft" @drag="beginDrag"
           :clip="item.clip" :track-id="item.trackId" :editable="!expanded"
           :display-height="stageSize.height"
           :playhead="editor.playhead"
         />
 
-        <template v-if="!expanded && textDraft?.mode === 'move'">
-          <div v-if="textDraft.x === 0.5" class="center-guide guide-x" aria-hidden="true" />
-          <div v-if="textDraft.y === 0.5" class="center-guide guide-y" aria-hidden="true" />
+        <PlatformGuide v-if="!expanded && guide !== 'off'" :platform="guide" />
+        <template v-if="!expanded && dragDraft?.mode === 'move'">
+          <div v-if="dragDraft.x === 0.5" class="center-guide guide-x" aria-hidden="true" />
+          <div v-if="dragDraft.y === 0.5" class="center-guide guide-y" aria-hidden="true" />
         </template>
-        <div v-if="!expanded" class="stage-badge">{{ timecode(editor.playhead, project.fps) }}</div>
+        <div v-if="!expanded && guide === 'off'" class="stage-badge">{{ timecode(editor.playhead, project.fps) }}</div>
+      </div>
       </div>
 
       <div v-if="!expanded && selectedVideoLayer" class="stage-tools" @pointerdown.stop @click.stop>
@@ -824,7 +793,7 @@ watch(
         :ref="bindAudioRef(item.clip.id)"
         :src="item.clip.asset_id ? assetUrl(project.id, item.clip.asset_id) : undefined"
         preload="auto"
-        @loadedmetadata="onMediaReady(item.clip, $event.target, true)"
+        @loadedmetadata="onMediaReady(item.clip, $event.target, true, item.active)"
       />
     </div>
 
@@ -846,13 +815,13 @@ watch(
       </div>
 
       <div class="transport-meta">
-        <label v-if="!expanded && visibleText.length" class="text-picker" title="Pilih teks di preview">
-          <Type :size="15" /><span>Pilih teks</span><ChevronDown :size="11" />
-          <select aria-label="Pilih teks di preview" :value="visibleText.some(item => item.clip.id === editor.selection?.clipId) ? editor.selection?.clipId : ''"
-            @pointerdown="editor.pause()" @keydown="editor.pause()" @change="selectPreviewText">
-            <option disabled value="">Pilih teks</option>
-            <option v-for="item in visibleText" :key="item.clip.id" :value="item.clip.id">
-              {{ editor.project?.timeline.tracks.find(t => t.id === item.trackId)?.name }} · {{ item.clip.text || item.clip.words?.map(w => w.word).join(' ') }}
+        <label v-if="!expanded && visibleClips.length" class="clip-picker" title="Pilih objek di preview">
+          <Layers :size="15" /><span>Pilih objek</span><ChevronDown :size="11" />
+          <select aria-label="Pilih objek di preview" :value="visibleClips.some(item => item.clip.id === editor.selection?.clipId) ? editor.selection?.clipId : ''"
+            @pointerdown="editor.pause()" @keydown="editor.pause()" @change="selectPreviewClip">
+            <option disabled value="">Pilih objek</option>
+            <option v-for="item in visibleClips" :key="item.clip.id" :value="item.clip.id">
+              {{ editor.project?.timeline.tracks.find(t => t.id === item.trackId)?.name }} · {{ item.clip.text || item.clip.words?.map(w => w.word).join(' ') || editor.assetMap.get(item.clip.asset_id ?? '')?.filename || item.clip.id }}
             </option>
           </select>
         </label>
@@ -886,7 +855,8 @@ watch(
   z-index: 100;
 }
 
-.expanded .stage { border: 0; border-radius: 0; }
+.expanded .stage { outline: none; }
+.expanded .preview-viewport { padding: 0; }
 .clean-overlay :deep(.overlay-item.selected::after),
 .clean-overlay :deep(.overlay-handle) { display: none; }
 
@@ -894,21 +864,55 @@ watch(
   position: relative;
   flex: 1;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
   background: #050505;
   overflow: hidden;
 }
 
+.view-controls, .zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.view-controls {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.zoom-value { min-width: 44px; justify-content: center; font-variant-numeric: tabular-nums; }
+.zoom-controls button:disabled { opacity: 0.4; }
+.guide-picker {
+  height: 24px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  background: var(--panel);
+  font-size: 11px;
+}
+.preview-viewport {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: auto;
+  padding: 3px;
+}
 .stage {
   position: relative;
+  flex: none;
+  margin: auto;
   background: #000;
-  border: 1px solid var(--border-soft);
-  border-radius: 4px;
+  outline: 1px solid #858585;
   overflow: hidden;
   cursor: pointer;
+}
+
+.video-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .stage-video {
@@ -919,8 +923,6 @@ watch(
   object-fit: contain;
   background: transparent;
   pointer-events: none;
-  transform-origin: center center;
-  will-change: transform, opacity;
 }
 
 .stage-empty,
@@ -1013,17 +1015,21 @@ watch(
   z-index: 6;
 }
 
-.transform-frame {
-  position: absolute;
-  inset: 0;
+.video-target.selected {
   border: 1px solid var(--accent);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55) inset;
-  transform-origin: center center;
+}
+
+.video-target {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  pointer-events: auto;
   cursor: grab;
   touch-action: none;
 }
 
-.transform-frame:active {
+.video-target:active {
   cursor: grabbing;
 }
 
@@ -1061,7 +1067,7 @@ watch(
   cursor: nesw-resize;
 }
 
-.text-picker {
+.clip-picker {
   position: relative;
   display: flex;
   align-items: center;
@@ -1073,7 +1079,7 @@ watch(
   white-space: nowrap;
   font-size: 11px;
 }
-.text-picker select {
+.clip-picker select {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1082,9 +1088,9 @@ watch(
   background: var(--panel);
   color: var(--text);
 }
-.text-picker:focus-within { outline: 1px solid var(--accent); }
+.clip-picker:focus-within { outline: 1px solid var(--accent); }
 @container (max-width: 560px) {
-  .text-picker span, .transport-meta .badge { display: none; }
+  .clip-picker span, .transport-meta .badge { display: none; }
 }
 
 .stage-tools {

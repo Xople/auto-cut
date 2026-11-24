@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type CSSProperties } from 'vue'
-import type { PreviewTextPose } from '../lib/previewTextDrag'
+import type { PreviewPose } from '../lib/previewDrag'
 import { assetUrl } from '../api'
 import { useEditor } from '../stores/editor'
 import type { Asset, Clip, Project } from '../types'
@@ -8,7 +8,7 @@ import type { Asset, Clip, Project } from '../types'
 type OverlayItem = { clip: Clip; asset?: Asset; trackId: string }
 
 const props = defineProps<{
-  draft: (PreviewTextPose & { clipId: string }) | null
+  draft: (PreviewPose & { clipId: string }) | null
   overlays: OverlayItem[]
   project: Project
   projectId: string
@@ -92,7 +92,8 @@ function textStyle(clip: Clip) {
 function mediaStyle(clip: Clip, asset?: Asset) {
   if (!asset || !asset.width || !asset.height) return { width: '100%' }
   const fit = Math.min(props.project.width / asset.width, props.project.height / asset.height)
-  const width = asset.width * fit * (clip.scale || 1) * (props.displayHeight / props.project.height)
+  const scale = props.draft?.clipId === clip.id ? props.draft.scale : (clip.scale || 1)
+  const width = asset.width * fit * scale * (props.displayHeight / props.project.height)
   return { width: `${width}px`, height: 'auto' }
 }
 
@@ -147,9 +148,9 @@ const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() 
       :key="overlay.clip.id"
       class="overlay-item"
       :class="{ text: isTextOverlay(overlay), selected: selectedId === overlay.clip.id }"
-      :data-preview-text="isTextOverlay(overlay) ? overlay.clip.id : undefined"
+      :data-preview-clip="overlay.clip.id"
       :style="wrapperStyle(overlay.clip)"
-      @pointerdown="isTextOverlay(overlay) && emit('drag', $event, overlay.trackId, overlay.clip, 'move')"
+      @pointerdown="emit('drag', $event, overlay.trackId, overlay.clip, 'move')"
       @click.stop
     >
       <div v-if="overlay.clip.text?.trim()" class="overlay-text" :style="textStyle(overlay.clip)">
@@ -170,13 +171,13 @@ const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() 
         muted
         playsinline
       />
-      <template v-if="isTextOverlay(overlay) && selectedId === overlay.clip.id && !editor.selectedTrack?.locked">
+      <template v-if="selectedId === overlay.clip.id && !editor.selectedTrack?.locked">
         <button
           v-for="corner in ['nw', 'ne', 'se', 'sw']"
           :key="corner"
           class="overlay-handle"
           :class="corner"
-          title="Tarik untuk scale teks"
+          title="Tarik untuk mengubah skala"
           @pointerdown.stop.prevent="emit('drag', $event, overlay.trackId, overlay.clip, 'scale')"
           @click.stop
         />
@@ -199,17 +200,17 @@ const visible = computed(() => props.overlays.filter((o) => o.clip.text?.trim() 
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.overlay-item.text {
   width: max-content;
-  max-width: 90%;
   pointer-events: auto;
   cursor: grab;
   touch-action: none;
 }
 
-.overlay-item.text:active {
+.overlay-item.text {
+  max-width: 90%;
+}
+
+.overlay-item:active {
   cursor: grabbing;
 }
 

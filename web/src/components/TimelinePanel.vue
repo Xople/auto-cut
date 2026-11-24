@@ -37,6 +37,7 @@ import Waveform from './Waveform.vue'
 import PlayheadMarker from './PlayheadMarker.vue'
 import {
   TRANSITIONS,
+  MUSIC_TRACK_ID,
   type Asset,
   type Clip,
   type Track,
@@ -145,7 +146,7 @@ const kindLabels: Record<TrackKind, string> = {
   caption: 'Caption',
 }
 
-function addTrack(kind: TrackKind) {
+function addTrack(kind: TrackKind | 'bgm') {
   menu.value = null
   const track = editor.addTrack(kind)
   if (!track) return
@@ -815,6 +816,9 @@ watch(
             <component :is="trackIcon(kind)" :size="13" />
             {{ kindLabels[kind] }}
           </button>
+          <button v-if="!tracks.some(track => track.id === MUSIC_TRACK_ID)" @click="addTrack('bgm')">
+            <Music :size="13" /> Musik Latar
+          </button>
         </div>
       </div>
       <button
@@ -1030,7 +1034,7 @@ watch(
               Seret video ke sini
             </div>
             <div v-if="track.kind === 'audio' && track.clips.length === 0" class="lane-hint">
-              Voice-over / musik
+              {{ track.id === MUSIC_TRACK_ID ? 'Seret musik latar ke sini' : 'Seret audio ke sini' }}
             </div>
           </div>
 

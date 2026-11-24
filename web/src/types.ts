@@ -1,5 +1,6 @@
 export type LibraryTool = 'media' | 'text' | 'transitions' | 'effects'
 export type TrackKind = 'video' | 'audio' | 'overlay' | 'caption'
+export const MUSIC_TRACK_ID = 'audio-bgm'
 export type AssetKind = 'video' | 'audio' | 'image'
 export type CutReason = 'silence' | 'filler' | 'retake' | 'off_topic' | 'keep'
 export type TransitionType =
@@ -93,6 +94,7 @@ export interface Clip {
   out: number
   x: number
   y: number
+  position_set?: boolean
   scale: number
   rotation: number
   opacity: number

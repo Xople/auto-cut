@@ -1,8 +1,9 @@
 import { onBeforeUnmount, shallowRef } from 'vue'
 import { useEditor } from '../stores/editor'
 import { captionPosition, type Clip } from '../types'
+import { MAX_CLIP_SCALE, MIN_CLIP_SCALE, transformAt } from './transform'
 
-export type PreviewTextPose = { x: number; y: number; scale: number }
+export type PreviewPose = { x: number; y: number; scale: number }
 type DragMode = 'move' | 'scale'
 const CENTER_SNAP_PX = 6
 
@@ -12,9 +13,9 @@ function dragPosition(start: number, delta: number, length: number, snap: boolea
   return Math.min(1, Math.max(0, value))
 }
 
-export function usePreviewTextDrag() {
+export function usePreviewDrag() {
   const editor = useEditor()
-  const draft = shallowRef<(PreviewTextPose & { clipId: string; mode: DragMode }) | null>(null)
+  const draft = shallowRef<(PreviewPose & { clipId: string; mode: DragMode }) | null>(null)
   let cancel: (() => void) | undefined
 
   function begin(event: PointerEvent, trackId: string, clip: Clip, mode: DragMode = 'move', target = event.currentTarget as HTMLElement) {
@@ -31,8 +32,11 @@ export function usePreviewTextDrag() {
     const rect = stage.getBoundingClientRect()
     if (!rect.width || !rect.height) return
     const caption = track.kind === 'caption'
-    const start = caption ? captionPosition(clip, editor.project.timeline.caption_style) : clip
-    const x = start.x, y = start.y, scale = clip.scale || 1
+    const video = track.kind === 'video'
+    const time = editor.playhead
+    const transform = video ? transformAt(clip, time) : clip
+    const { x, y } = caption ? captionPosition(clip, editor.project.timeline.caption_style) : transform
+    const scale = transform.scale || 1
     const cx = rect.left + x * rect.width, cy = rect.top + y * rect.height
     const radius = Math.max(1, Math.hypot(event.clientX - cx, event.clientY - cy))
 
@@ -48,19 +52,21 @@ export function usePreviewTextDrag() {
         }
       } else {
         const distance = Math.hypot(e.clientX - cx, e.clientY - cy)
-        draft.value = { clipId: clip.id, mode, x, y, scale: Math.min(3, Math.max(0.1, scale * distance / radius)) }
+        const minScale = video ? MIN_CLIP_SCALE : 0.1
+        draft.value = { clipId: clip.id, mode, x, y, scale: Math.min(MAX_CLIP_SCALE, Math.max(minScale, scale * distance / radius)) }
       }
     }
 
     function finish(e: PointerEvent) {
       if (e.pointerId !== event.pointerId) return
-      if (e.type === 'pointerup' && !editor.selectedTrack?.locked && editor.selectedClip === clip) {
+      if (e.type === 'pointerup' && editor.playhead === time && !editor.selectedTrack?.locked && editor.selectedClip === clip) {
         move(e)
         const pose = draft.value
         if (pose && (pose.x !== x || pose.y !== y || pose.scale !== scale)) {
           const point = { x: pose.x, y: pose.y }
-          const patch = caption ? { caption_position: point } : mode === 'move' ? point : { scale: pose.scale }
-          editor.updateClip(trackId, clip.id, patch)
+          const patch = mode === 'move' ? point : { scale: pose.scale }
+          if (video) editor.setClipTransform(trackId, clip.id, patch, '')
+          else editor.updateClip(trackId, clip.id, caption ? { caption_position: point } : patch)
         }
       }
       cleanup()

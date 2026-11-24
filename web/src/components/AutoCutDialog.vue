@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { Scissors, Sparkles, X } from 'lucide-vue-next'
+import { Scissors, Sparkles } from 'lucide-vue-next'
+import AppDialog from './AppDialog.vue'
 import { api, subscribeTask } from '../api'
 import { useEditor } from '../stores/editor'
 import { formatSecondsShort } from '../lib/format'
@@ -220,109 +221,93 @@ const sourceHint = computed(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="modelValue" class="modal-backdrop" @click.self="close">
-      <div class="modal autocut-modal">
-        <header class="modal-header">
-          <div class="modal-title">
-            <Scissors :size="17" />
-            Auto Cut
-            <span class="badge accent">voice-over</span>
-          </div>
-          <button class="icon-btn" @click="close"><X :size="16" /></button>
-        </header>
+  <AppDialog v-if="modelValue" class="autocut-modal" heading="Auto Cut" :icon="Scissors" detail="Voice-over" @dismiss="close">
+    <div class="field">
+      <label class="field-label">Sumber audio</label>
+      <select v-model="assetId" class="select" :disabled="running">
+        <option value="" disabled>Pilih asset...</option>
+        <option v-for="asset in voiceAssets" :key="asset.id" :value="asset.id">
+          {{ asset.filename }} ({{ formatSecondsShort(asset.duration) }})
+        </option>
+      </select>
+      <span class="hint">{{ sourceHint }}</span>
+    </div>
 
-        <div class="modal-body">
-          <div class="field">
-            <label class="field-label">Sumber audio</label>
-            <select v-model="assetId" class="select" :disabled="running">
-              <option value="" disabled>Pilih asset...</option>
-              <option v-for="asset in voiceAssets" :key="asset.id" :value="asset.id">
-                {{ asset.filename }} ({{ formatSecondsShort(asset.duration) }})
-              </option>
-            </select>
-            <span class="hint">{{ sourceHint }}</span>
-          </div>
+    <div class="options-row">
+      <label class="toggle"><input v-model="useAI" type="checkbox" :disabled="running" /> AI cut (DeepSeek)</label>
+      <label class="toggle"><input v-model="useQA" type="checkbox" :disabled="running" /> QA (Gemini)</label>
+      <label class="toggle"><input v-model="ripple" type="checkbox" :disabled="running" /> Ripple timeline</label>
+    </div>
 
-          <div class="options-row">
-            <label class="toggle"><input v-model="useAI" type="checkbox" :disabled="running" /> AI cut (DeepSeek)</label>
-            <label class="toggle"><input v-model="useQA" type="checkbox" :disabled="running" /> QA (Gemini)</label>
-            <label class="toggle"><input v-model="ripple" type="checkbox" :disabled="running" /> Ripple timeline</label>
-          </div>
-
-          <div v-if="running || progress > 0" class="progress-block">
-            <div class="progress-head">
-              <span>{{ progressMessage || 'Menganalisis...' }}</span>
-              <span class="value">{{ Math.round(progress * 100) }}%</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
-            </div>
-          </div>
-
-          <div v-if="error" class="error-text">{{ error }}</div>
-
-          <div v-if="transcriptMock" class="warning-box">
-            <Sparkles :size="15" style="flex-shrink: 0; margin-top: 1px" />
-            <span>
-              Whisper CLI tidak terdeteksi, jadi transkrip di bawah adalah <strong>contoh (mock)</strong>. Pasang
-              whisper.cpp + model ggml untuk hasil sungguhan.
-            </span>
-          </div>
-
-          <template v-if="cuts.length">
-            <div class="section-title">
-              <span>Saran potongan ({{ activeCuts.length }}/{{ cuts.length }})</span>
-              <span class="row" style="gap: 6px">
-                <button class="btn btn-ghost btn-mini" @click="toggleAll(true)">Semua</button>
-                <button class="btn btn-ghost btn-mini" @click="toggleAll(false)">Kosongkan</button>
-              </span>
-            </div>
-
-            <div class="cut-meta">
-              <span class="badge">{{ transcriptWords }} kata transkrip</span>
-              <span class="badge teal">{{ formatSecondsShort(selectedSeconds) }}</span>
-              <span class="hint">dihapus</span>
-            </div>
-
-            <div class="cut-list">
-              <div v-for="[reason, list] in grouped" :key="reason" class="cut-group">
-                <div class="cut-group-title">
-                  <span class="badge" :class="reasonClass(reason)">{{ reasonLabel(reason) }}</span>
-                  <span class="hint">{{ list.length }} segmen</span>
-                </div>
-                <label v-for="cut in list" :key="cut.id" class="cut-row" :class="{ active: checked[cut.id] }">
-                  <input v-model="checked[cut.id]" type="checkbox" />
-                  <span class="cut-time">{{ formatSecondsShort(cut.start) }} → {{ formatSecondsShort(cut.end) }}</span>
-                  <span class="cut-dur">{{ cut.duration.toFixed(2) }}s</span>
-                  <span class="cut-text">{{ cut.text || '—' }}</span>
-                  <span v-if="cut.needs_review" class="badge amber">review</span>
-                </label>
-              </div>
-            </div>
-          </template>
-
-          <div v-else-if="!running" class="empty-state">
-            <Scissors :size="22" />
-            <span>Belum ada saran potongan.<br />Jalankan analisis untuk mendeteksi senyap, filler, dan retake.</span>
-          </div>
-        </div>
-
-        <footer class="modal-footer">
-          <span class="hint footer-hint">Potongan memakai waktu asset; clip di timeline dipadatkan otomatis.</span>
-          <button class="btn" :disabled="running" @click="close">Tutup</button>
-          <button class="btn" :disabled="running || !assetId" @click="runAnalyze">
-            <Sparkles :size="14" />
-            {{ running ? 'Menganalisis...' : cuts.length ? 'Analisis ulang' : 'Analisis' }}
-          </button>
-          <button class="btn btn-primary" :disabled="applyBusy || running || activeCuts.length === 0" @click="applyCuts">
-            <Scissors :size="14" />
-            Terapkan ({{ activeCuts.length }})
-          </button>
-        </footer>
+    <div v-if="running || progress > 0" class="progress-block">
+      <div class="progress-head">
+        <span>{{ progressMessage || 'Menganalisis...' }}</span>
+        <span class="value">{{ Math.round(progress * 100) }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
       </div>
     </div>
-  </Teleport>
+
+    <div v-if="error" class="error-text">{{ error }}</div>
+
+    <div v-if="transcriptMock" class="warning-box">
+      <Sparkles :size="15" style="flex-shrink: 0; margin-top: 1px" />
+      <span>
+        Whisper CLI tidak terdeteksi, jadi transkrip di bawah adalah <strong>contoh (mock)</strong>. Pasang
+        whisper.cpp + model ggml untuk hasil sungguhan.
+      </span>
+    </div>
+
+    <template v-if="cuts.length">
+      <div class="section-title">
+        <span>Saran potongan ({{ activeCuts.length }}/{{ cuts.length }})</span>
+        <span class="row" style="gap: 6px">
+          <button class="btn btn-ghost btn-mini" @click="toggleAll(true)">Semua</button>
+          <button class="btn btn-ghost btn-mini" @click="toggleAll(false)">Kosongkan</button>
+        </span>
+      </div>
+
+      <div class="cut-meta">
+        <span class="badge">{{ transcriptWords }} kata transkrip</span>
+        <span class="badge teal">{{ formatSecondsShort(selectedSeconds) }}</span>
+        <span class="hint">dihapus</span>
+      </div>
+
+      <div class="cut-list">
+        <div v-for="[reason, list] in grouped" :key="reason" class="cut-group">
+          <div class="cut-group-title">
+            <span class="badge" :class="reasonClass(reason)">{{ reasonLabel(reason) }}</span>
+            <span class="hint">{{ list.length }} segmen</span>
+          </div>
+          <label v-for="cut in list" :key="cut.id" class="cut-row" :class="{ active: checked[cut.id] }">
+            <input v-model="checked[cut.id]" type="checkbox" />
+            <span class="cut-time">{{ formatSecondsShort(cut.start) }} → {{ formatSecondsShort(cut.end) }}</span>
+            <span class="cut-dur">{{ cut.duration.toFixed(2) }}s</span>
+            <span class="cut-text">{{ cut.text || '—' }}</span>
+            <span v-if="cut.needs_review" class="badge amber">review</span>
+          </label>
+        </div>
+      </div>
+    </template>
+
+    <div v-else-if="!running" class="empty-state">
+      <Scissors :size="22" />
+      <span>Belum ada saran potongan.<br />Jalankan analisis untuk mendeteksi senyap, filler, dan retake.</span>
+    </div>
+    <template #footer>
+      <span class="hint footer-hint">Potongan memakai waktu asset; clip di timeline dipadatkan otomatis.</span>
+      <button class="btn" :disabled="running" @click="close">Tutup</button>
+      <button class="btn" :disabled="running || !assetId" @click="runAnalyze">
+        <Sparkles :size="14" />
+        {{ running ? 'Menganalisis...' : cuts.length ? 'Analisis ulang' : 'Analisis' }}
+      </button>
+      <button class="btn btn-primary" :disabled="applyBusy || running || activeCuts.length === 0" @click="applyCuts">
+        <Scissors :size="14" />
+        Terapkan ({{ activeCuts.length }})
+      </button>
+    </template>
+  </AppDialog>
 </template>
 
 <style scoped>

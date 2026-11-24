@@ -4,13 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 )
 
 // Timeline schema versions. Version 2 adds per-track height/hidden and
 // per-clip speed/linked_id on top of the original v1 document. Version 3 adds
 // per-clip transitions. Version 4 adds per-clip transform keyframes.
-const TimelineVersion = 4
+// Version 5 adds the dedicated background music track to existing projects once.
+const TimelineVersion = 5
 
 // Timeline guard rails for the editor. They keep a runaway document from
 // stalling saves, rendering, and the JSON transport.
@@ -31,6 +33,15 @@ const (
 // NormalizeTimeline upgrades a decoded document to the current schema version
 // and fills in defaults that older projects never stored.
 func NormalizeTimeline(t *Timeline) {
+	if t.Version < 5 && len(t.Tracks) > 0 && len(t.Tracks) < MaxTracks &&
+		!slices.ContainsFunc(t.Tracks, func(track Track) bool { return track.ID == BackgroundMusicTrackID }) {
+		index := slices.IndexFunc(t.Tracks, func(track Track) bool { return track.ID == "audio-main" })
+		if index < 0 {
+			t.Tracks = append(t.Tracks, newMusicTrack())
+		} else {
+			t.Tracks = slices.Insert(t.Tracks, index+1, newMusicTrack())
+		}
+	}
 	if t.Version < TimelineVersion {
 		t.Version = TimelineVersion
 	}
@@ -90,7 +101,7 @@ func NormalizeTimeline(t *Timeline) {
 			if track.Kind == TrackVideo {
 				// Video clips saved before the transform feature stored no
 				// pose at all, so their zero values must mean "centered".
-				if len(clip.Keyframes) == 0 && clip.X == 0 && clip.Y == 0 {
+				if !clip.PositionSet && len(clip.Keyframes) == 0 && clip.X == 0 && clip.Y == 0 {
 					clip.X = 0.5
 					clip.Y = 0.5
 				}

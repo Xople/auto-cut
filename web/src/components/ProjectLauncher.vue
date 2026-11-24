@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Clock, Film, FolderOpen, Plus, Scissors, Trash2, X } from 'lucide-vue-next'
+import { Clock, Film, FolderOpen, Plus, Trash2 } from 'lucide-vue-next'
+import AppDialog from './AppDialog.vue'
 import { api } from '../api'
 import { formatSecondsShort } from '../lib/format'
 import type { Project } from '../types'
@@ -13,6 +14,19 @@ const loading = ref(true)
 const error = ref('')
 const showCreate = ref(false)
 const creating = ref(false)
+const pendingDelete = ref<Project | null>(null)
+const deleting = ref(false)
+const dialogError = ref('')
+
+function openCreate() {
+  dialogError.value = ''
+  showCreate.value = true
+}
+
+function askDelete(project: Project) {
+  dialogError.value = ''
+  pendingDelete.value = project
+}
 const newName = ref('')
 const preset = ref('1920x1080')
 const fps = ref(30)
@@ -54,20 +68,24 @@ async function create() {
     showCreate.value = false
     emit('open', project)
   } catch (err) {
-    error.value = (err as Error).message
+    dialogError.value = (err as Error).message
   } finally {
     creating.value = false
   }
 }
 
-async function remove(project: Project, event: MouseEvent) {
-  event.stopPropagation()
-  if (!confirm(`Hapus project "${project.name}" beserta semua media di dalamnya?`)) return
+async function remove() {
+  const project = pendingDelete.value
+  if (!project || deleting.value) return
+  deleting.value = true
   try {
     await api.deleteProject(project.id)
     projects.value = projects.value.filter((p) => p.id !== project.id)
+    pendingDelete.value = null
   } catch (err) {
-    error.value = (err as Error).message
+    dialogError.value = (err as Error).message
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -91,13 +109,13 @@ onMounted(load)
   <main class="launcher">
     <div class="launcher-head">
       <div class="brand-row">
-        <div class="brand-mark"><Scissors :size="20" /></div>
+        <img class="brand-mark" src="/autocut.png" alt="" />
         <div>
           <h1>AutoCut Workstation</h1>
           <p>Editor timeline lokal untuk produksi video essay TxShD.</p>
         </div>
       </div>
-      <button class="btn btn-primary" @click="showCreate = true">
+      <button class="btn btn-primary" @click="openCreate">
         <Plus :size="15" />
         Project Baru
       </button>
@@ -114,7 +132,7 @@ onMounted(load)
       <div class="empty-icon"><FolderOpen :size="26" /></div>
       <h2>Belum ada project</h2>
       <p>Mulai dengan membuat project baru, lalu impor video, voice-over, musik, atau gambar.</p>
-      <button class="btn btn-primary" @click="showCreate = true">
+      <button class="btn btn-primary" @click="openCreate">
         <Plus :size="15" />
         Buat project pertama
       </button>
@@ -138,7 +156,7 @@ onMounted(load)
         <div class="card-body">
           <div class="card-title-row">
             <h3>{{ project.name }}</h3>
-            <button class="icon-btn card-delete" title="Hapus project" @click="remove(project, $event)">
+            <button class="icon-btn card-delete" title="Hapus project" @click.stop="askDelete(project)">
               <Trash2 :size="14" />
             </button>
           </div>
@@ -152,7 +170,7 @@ onMounted(load)
         </div>
       </article>
 
-      <button class="new-card" @click="showCreate = true">
+      <button class="new-card" @click="openCreate">
         <span class="new-card-plus"><Plus :size="20" /></span>
         <span>Project baru</span>
         <span class="new-card-hint">Mulai dari timeline kosong</span>
@@ -164,56 +182,58 @@ onMounted(load)
       <span v-if="busy">Membuka project...</span>
     </footer>
 
-    <div v-if="showCreate" class="modal-backdrop" @click.self="showCreate = false">
-      <div class="modal">
-        <div class="modal-header">
-          <div class="modal-title">Project baru</div>
-          <button class="icon-btn" title="Tutup" @click="showCreate = false"><X :size="15" /></button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label class="field-label">Nama project</label>
-            <input
-              v-model="newName"
-              class="input"
-              placeholder="Contoh: Analisis Elden Ring — Lore"
-              autofocus
-              @keydown.enter="create"
-            />
-          </div>
-          <div class="field">
-            <label class="field-label">Resolusi</label>
-            <select v-model="preset" class="select">
-              <option v-for="item in presets" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label class="field-label">Frame rate</label>
-            <div class="fps-row">
-              <button
-                v-for="value in [24, 30, 60]"
-                :key="value"
-                class="fps-chip"
-                :class="{ active: fps === value }"
-                @click="fps = value"
-              >
-                {{ value }} fps
-              </button>
-            </div>
-          </div>
-          <p class="hint">
-            Timeline dibuat dengan track Video, Overlay, Audio, dan Caption. Semua media disalin ke folder project
-            supaya aman walau file asli dipindah.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showCreate = false">Batal</button>
-          <button class="btn btn-primary" :disabled="creating" @click="create">
-            {{ creating ? 'Membuat...' : 'Buat project' }}
+    <AppDialog v-if="showCreate" class="project-dialog" heading="Project baru" :icon="FolderOpen" @dismiss="showCreate = false">
+      <div class="field">
+        <label class="field-label">Nama project</label>
+        <input
+          v-model="newName"
+          class="input"
+          placeholder="Contoh: Analisis Elden Ring — Lore"
+          autofocus
+          @keydown.enter="create"
+        />
+      </div>
+      <div class="field">
+        <label class="field-label">Resolusi</label>
+        <select v-model="preset" class="select">
+          <option v-for="item in presets" :key="item.value" :value="item.value">{{ item.label }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Frame rate</label>
+        <div class="fps-row">
+          <button
+            v-for="value in [24, 30, 60]"
+            :key="value"
+            class="fps-chip"
+            :class="{ active: fps === value }"
+            @click="fps = value"
+          >
+            {{ value }} fps
           </button>
         </div>
       </div>
-    </div>
+      <p class="hint">
+        Timeline dibuat dengan track Video, Overlay, Audio, Musik Latar, dan Caption. Semua media disalin ke folder project
+        supaya aman walau file asli dipindah.
+      </p>
+      <p v-if="dialogError" class="error-text" role="alert">{{ dialogError }}</p>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showCreate = false">Batal</button>
+        <button class="btn btn-primary" :disabled="creating" @click="create">
+          {{ creating ? 'Membuat...' : 'Buat project' }}
+        </button>
+      </template>
+    </AppDialog>
+    <AppDialog v-if="pendingDelete" class="project-dialog" heading="Hapus project?" :icon="Trash2" danger
+      @dismiss="!deleting && (pendingDelete = null)">
+      <p class="delete-message">Project <strong>{{ pendingDelete.name }}</strong> dan semua media di folder project akan dihapus permanen.</p>
+      <p v-if="dialogError" class="error-text" role="alert">{{ dialogError }}</p>
+      <template #footer>
+        <button class="btn btn-ghost" autofocus :disabled="deleting" @click="pendingDelete = null">Batal</button>
+        <button class="btn btn-primary" :disabled="deleting" @click="remove">{{ deleting ? 'Menghapus�' : 'Hapus project' }}</button>
+      </template>
+    </AppDialog>
   </main>
 </template>
 
@@ -244,12 +264,7 @@ onMounted(load)
 .brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--panel-3);
-  color: var(--text);
+  display: block;
 }
 
 .launcher-head h1 {

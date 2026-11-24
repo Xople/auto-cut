@@ -11,8 +11,8 @@ func TestNewTimelineIsCurrentVersion(t *testing.T) {
 	if tl.Version != TimelineVersion {
 		t.Fatalf("expected version %d, got %d", TimelineVersion, tl.Version)
 	}
-	if len(tl.Tracks) != 4 {
-		t.Fatalf("expected 4 default tracks, got %d", len(tl.Tracks))
+	if len(tl.Tracks) != 5 || tl.Tracks[3].ID != BackgroundMusicTrackID || tl.Tracks[3].Kind != TrackAudio {
+		t.Fatalf("missing default music track: %+v", tl.Tracks)
 	}
 	for _, track := range tl.Tracks {
 		if track.Height != DefaultTrackHeight {
@@ -71,6 +71,14 @@ func TestNormalizeTimelineUpgradesV1(t *testing.T) {
 	}
 	if tl.Tracks[1].Clips == nil {
 		t.Error("nil clip slices should normalize to empty slices")
+	}
+	if len(tl.Tracks) != 3 || tl.Tracks[2].ID != BackgroundMusicTrackID {
+		t.Fatal("legacy timeline did not get a music track")
+	}
+	tl.Tracks = tl.Tracks[:2]
+	NormalizeTimeline(&tl)
+	if len(tl.Tracks) != 2 {
+		t.Fatal("a removed music track was unexpectedly recreated")
 	}
 	if err := ValidateTimeline(tl); err != nil {
 		t.Fatalf("normalized v1 timeline should be valid: %v", err)
@@ -214,5 +222,15 @@ func TestNormalizeTimelineFillsLegacyVideoTransform(t *testing.T) {
 	}
 	if clip.Scale != 1 {
 		t.Fatalf("expected legacy clip scale 1, got %v", clip.Scale)
+	}
+}
+
+func TestNormalizeTimelinePreservesVideoAtOrigin(t *testing.T) {
+	tl := NewTimeline(1080, 1920, 30)
+	tl.Tracks[0].Clips = []Clip{{ID: "video", Scale: 1, X: 0, Y: 0, PositionSet: true}}
+	NormalizeTimeline(&tl)
+	clip := tl.Tracks[0].Clips[0]
+	if clip.X != 0 || clip.Y != 0 {
+		t.Fatalf("video moved after saving at the top-left corner: (%v, %v)", clip.X, clip.Y)
 	}
 }

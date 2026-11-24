@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useTooltips } from './lib/tooltips'
 import { api, initApi, waitForServer } from './api'
 import { useEditor } from './stores/editor'
 import ProjectLauncher from './components/ProjectLauncher.vue'
@@ -9,6 +10,7 @@ import ExportDialog from './components/ExportDialog.vue'
 import ToastHost from './components/ToastHost.vue'
 import type { Project } from './types'
 
+useTooltips()
 const editor = useEditor()
 const booting = ref(true)
 const bootError = ref('')
@@ -66,7 +68,7 @@ async function generateCaptions() {
 }
 
 function onGlobalKeydown(event: KeyboardEvent) {
-  if (!editor.project) return
+  if (!editor.project || document.querySelector('dialog:modal')) return
   const target = event.target as HTMLElement | null
   const tag = target?.tagName?.toLowerCase()
   if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return

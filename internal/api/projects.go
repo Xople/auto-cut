@@ -409,7 +409,7 @@ func (s *Server) handleGenerateCaptions(w http.ResponseWriter, r *http.Request) 
 
 	var sources []models.Clip
 	for _, track := range p.Timeline.Tracks {
-		if track.ID == "audio-bgm" || track.ID == "audio-sfx" {
+		if track.ID == models.BackgroundMusicTrackID || track.ID == "audio-sfx" {
 			continue
 		}
 		if track.Kind == models.TrackAudio || track.Kind == models.TrackVideo {

@@ -880,7 +880,7 @@ func buildAudio(b *graphBuilder, tl models.Timeline, assets map[string]*models.A
 	linkedAudio := map[string]bool{}
 	audioTwins := map[string][]models.Clip{}
 	for _, track := range tl.Tracks {
-		if track.Kind != models.TrackAudio {
+		if track.Kind != models.TrackAudio || track.ID == models.BackgroundMusicTrackID {
 			continue
 		}
 		for _, clip := range track.Clips {
